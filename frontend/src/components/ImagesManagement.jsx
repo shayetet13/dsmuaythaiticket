@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Trash2, Edit2, Save, X, Plus } from 'lucide-react';
-import { getAllData, updateHeroImage, updateHighlight, addHighlight, deleteHighlight, updateStadium, updateWeeklyFight } from '../db/imagesDb';
+import { getAllData, updateHeroImage, updateHighlight, addHighlight, deleteHighlight, updateStadium, updateUpcomingFightsBackground } from '../db/imagesDb';
 
 const ImagesManagement = () => {
   const [activeSection, setActiveSection] = useState('hero');
@@ -71,10 +71,10 @@ const ImagesManagement = () => {
 
   const sections = [
     { id: 'hero', label: 'Hero Image' },
+    { id: 'upcoming', label: 'Upcoming Fights Background' },
     { id: 'highlights', label: 'Highlights' },
     { id: 'stadiums', label: 'Stadiums' },
-    { id: 'logos', label: 'Stadium Logos' },
-    { id: 'fights', label: 'Upcoming Fights' }
+    { id: 'logos', label: 'Stadium Logos' }
   ];
 
   // Hero Image Management
@@ -90,6 +90,23 @@ const ImagesManagement = () => {
       }
     } catch (error) {
       console.error('Error saving hero image:', error);
+      showMessage('error', 'เกิดข้อผิดพลาดในการอัพเดท');
+    }
+  };
+
+  // Upcoming Fights Background Management
+  const handleUpcomingBackgroundSave = async () => {
+    try {
+      const result = await updateUpcomingFightsBackground(editForm.image, editForm.fallback);
+      if (result) {
+        showMessage('success', 'อัพเดท Upcoming Fights Background สำเร็จ');
+        setEditingId(null);
+        await loadData();
+      } else {
+        showMessage('error', 'เกิดข้อผิดพลาดในการอัพเดท');
+      }
+    } catch (error) {
+      console.error('Error saving upcoming fights background:', error);
       showMessage('error', 'เกิดข้อผิดพลาดในการอัพเดท');
     }
   };
@@ -136,41 +153,6 @@ const ImagesManagement = () => {
         }
       } catch (error) {
         console.error('Error deleting highlight:', error);
-        showMessage('error', 'เกิดข้อผิดพลาดในการลบ');
-      }
-    }
-  };
-
-  // Weekly Fight Management
-  const handleWeeklyFightSave = async (day) => {
-    try {
-      const result = await updateWeeklyFight(day, editForm);
-      if (result) {
-        showMessage('success', 'อัพเดทภาพสำเร็จ');
-        setEditingId(null);
-        setEditForm({});
-        await loadData();
-      } else {
-        showMessage('error', 'เกิดข้อผิดพลาดในการอัพเดท');
-      }
-    } catch (error) {
-      console.error('Error saving weekly fight:', error);
-      showMessage('error', 'เกิดข้อผิดพลาดในการอัพเดท');
-    }
-  };
-
-  const handleWeeklyFightDelete = async (day) => {
-    if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบภาพนี้?')) {
-      try {
-        const result = await updateWeeklyFight(day, { image: '', logos: [] });
-        if (result) {
-          showMessage('success', 'ลบภาพสำเร็จ');
-          await loadData();
-        } else {
-          showMessage('error', 'เกิดข้อผิดพลาดในการลบ');
-        }
-      } catch (error) {
-        console.error('Error deleting weekly fight:', error);
         showMessage('error', 'เกิดข้อผิดพลาดในการลบ');
       }
     }
@@ -278,6 +260,114 @@ const ImagesManagement = () => {
                 onClick={() => {
                   setEditingId('hero');
                   setEditForm({ image: data.hero.image, alt: data.hero.alt });
+                }}
+                className="bg-yellow-500 text-black px-4 py-2 rounded-lg flex items-center gap-2 font-semibold"
+              >
+                <Edit2 className="w-4 h-4" /> แก้ไข
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Upcoming Fights Background Section */}
+      {activeSection === 'upcoming' && (
+        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+          <h3 className="text-xl font-black text-white mb-4 uppercase">Upcoming Fights Background</h3>
+          {editingId === 'upcoming' ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Image Path หรือ Base64</label>
+                <input
+                  type="text"
+                  value={editForm.image || (data.upcomingFightsBackground?.image || '')}
+                  onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white"
+                  placeholder="/images/upcoming-fights-bg.jpg"
+                />
+                <p className="text-xs text-gray-400 mt-1">หรืออัพโหลดไฟล์ภาพด้านล่าง</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">อัพโหลดภาพ</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      try {
+                        const compressedBase64 = await compressImage(file, 1920, 1080, 0.85);
+                        setEditForm({ ...editForm, image: compressedBase64 });
+                      } catch (error) {
+                        console.error('Error compressing image:', error);
+                        showMessage('error', 'เกิดข้อผิดพลาดในการอัพโหลดภาพ');
+                      }
+                    }
+                  }}
+                  className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-black hover:file:bg-yellow-400 cursor-pointer"
+                />
+              </div>
+              {editForm.image && (
+                <div className="bg-gray-900 rounded-lg p-4">
+                  <img
+                    src={editForm.image}
+                    alt="Preview"
+                    className="max-w-full h-64 object-cover rounded-lg"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Fallback Image Path (ถ้าภาพหลักโหลดไม่ได้)</label>
+                <input
+                  type="text"
+                  value={editForm.fallback || (data.upcomingFightsBackground?.fallback || '/images/highlights/World class fighters.jpg')}
+                  onChange={(e) => setEditForm({ ...editForm, fallback: e.target.value })}
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white"
+                  placeholder="/images/highlights/World class fighters.jpg"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleUpcomingBackgroundSave}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" /> บันทึก
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingId(null);
+                    setEditForm({});
+                  }}
+                  className="bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" /> ยกเลิก
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="bg-gray-900 rounded-lg p-4 mb-4">
+                <img
+                  src={data.upcomingFightsBackground?.image || '/images/upcoming-fights-bg.jpg'}
+                  alt="Upcoming Fights Background"
+                  className="max-w-full h-64 object-cover rounded-lg mb-4"
+                  onError={(e) => {
+                    e.target.src = data.upcomingFightsBackground?.fallback || '/images/highlights/World class fighters.jpg';
+                  }}
+                />
+                <p className="text-gray-300"><strong>Path:</strong> {data.upcomingFightsBackground?.image || '/images/upcoming-fights-bg.jpg'}</p>
+                <p className="text-gray-300"><strong>Fallback:</strong> {data.upcomingFightsBackground?.fallback || '/images/highlights/World class fighters.jpg'}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingId('upcoming');
+                  setEditForm({ 
+                    image: data.upcomingFightsBackground?.image || '/images/upcoming-fights-bg.jpg',
+                    fallback: data.upcomingFightsBackground?.fallback || '/images/highlights/World class fighters.jpg'
+                  });
                 }}
                 className="bg-yellow-500 text-black px-4 py-2 rounded-lg flex items-center gap-2 font-semibold"
               >
@@ -699,254 +789,6 @@ const ImagesManagement = () => {
         </div>
       )}
 
-      {/* Weekly Fights Section (Upcoming Fights by Day) */}
-      {activeSection === 'fights' && (
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-          <h3 className="text-xl font-black text-white uppercase mb-6">Upcoming Fights (ตามวัน)</h3>
-          <div className="space-y-6">
-            {[
-              { day: 'monday', label: 'จันทร์', labelEn: 'Monday' },
-              { day: 'tuesday', label: 'อังคาร', labelEn: 'Tuesday' },
-              { day: 'wednesday', label: 'พุธ', labelEn: 'Wednesday' },
-              { day: 'thursday', label: 'พฤหัสบดี', labelEn: 'Thursday' },
-              { day: 'friday', label: 'ศุกร์', labelEn: 'Friday' },
-              { day: 'saturday', label: 'เสาร์', labelEn: 'Saturday' },
-              { day: 'sunday', label: 'อาทิตย์', labelEn: 'Sunday' }
-            ].map(({ day, label, labelEn }) => {
-              const weeklyFight = data.weeklyFights?.[day] || { image: '', logos: [] };
-              const editing = editingId === `fight-${day}`;
-              
-              return (
-                <div key={day} className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-                  {editing ? (
-                    <div className="space-y-4">
-                      <h4 className="text-white font-semibold text-lg">{labelEn} ({label})</h4>
-                      
-                      {/* Image Upload */}
-                      <div>
-                        <label className="block text-xs text-gray-400 mb-2">อัพโหลดภาพ</label>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={async (e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              if (file.size > 50 * 1024 * 1024) {
-                                showMessage('error', 'ไฟล์ภาพใหญ่เกินไป (สูงสุด 50MB)');
-                                return;
-                              }
-                              
-                              try {
-                                showMessage('info', 'กำลังบีบอัดภาพ...');
-                                const compressedBase64 = await compressImage(file);
-                                setEditForm({
-                                  ...editForm,
-                                  image: compressedBase64
-                                });
-                                showMessage('success', 'อัพโหลดภาพสำเร็จ (บีบอัดแล้ว)');
-                              } catch (error) {
-                                console.error('Error compressing image:', error);
-                                showMessage('error', 'เกิดข้อผิดพลาดในการอัพโหลดภาพ');
-                              }
-                            }
-                          }}
-                          className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-black hover:file:bg-yellow-400 cursor-pointer"
-                        />
-                        {editForm.image && (
-                          <div className="mt-3 bg-gray-800 rounded p-3">
-                            <p className="text-xs text-gray-400 mb-2">Preview:</p>
-                            <img
-                              src={editForm.image}
-                              alt="Preview"
-                              className="w-full max-h-64 object-contain rounded"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Logos (Optional - Max 3) */}
-                      <div>
-                        <label className="block text-xs text-gray-400 mb-2">โลโก้ (ไม่บังคับ, สูงสุด 3 โลโก้)</label>
-                        
-                        {/* Logo Upload Slots */}
-                        {[0, 1, 2].map((logoIndex) => {
-                          const logo = (editForm.logos || [])[logoIndex] || null;
-                          return (
-                            <div key={logoIndex} className="mb-3">
-                              <div className="flex gap-2 items-center">
-                                <div className="flex-1">
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={async (e) => {
-                                      const file = e.target.files[0];
-                                      if (file) {
-                                        try {
-                                          // For logos, use smaller max dimensions but higher quality
-                                          const compressedBase64 = await compressImage(file, 800, 800, 0.9);
-                                          const newLogos = [...(editForm.logos || [])];
-                                          newLogos[logoIndex] = compressedBase64;
-                                          // Fill empty slots with empty strings if needed
-                                          while (newLogos.length <= logoIndex) {
-                                            newLogos.push('');
-                                          }
-                                          setEditForm({ ...editForm, logos: newLogos });
-                                        } catch (error) {
-                                          console.error('Error compressing logo:', error);
-                                          showMessage('error', 'เกิดข้อผิดพลาดในการอัพโหลดโลโก้');
-                                        }
-                                      }
-                                    }}
-                                    className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-400 cursor-pointer"
-                                    id={`logo-upload-${logoIndex}`}
-                                  />
-                                </div>
-                                {logo && (
-                                  <button
-                                    onClick={() => {
-                                      const newLogos = [...(editForm.logos || [])];
-                                      newLogos[logoIndex] = '';
-                                      // Remove trailing empty strings
-                                      while (newLogos.length > 0 && !newLogos[newLogos.length - 1]) {
-                                        newLogos.pop();
-                                      }
-                                      setEditForm({ ...editForm, logos: newLogos });
-                                      // Reset file input
-                                      const fileInput = document.getElementById(`logo-upload-${logoIndex}`);
-                                      if (fileInput) fileInput.value = '';
-                                    }}
-                                    className="bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-500 transition-colors"
-                                  >
-                                    ลบ
-                                  </button>
-                                )}
-                              </div>
-                              {logo && (
-                                <div className="mt-2 bg-gray-800 rounded p-2">
-                                  <div className="flex items-center justify-center" style={{ width: '120px', height: '60px' }}>
-                                    <img
-                                      src={logo}
-                                      alt={`Logo ${logoIndex + 1}`}
-                                      className="max-w-full max-h-full object-contain"
-                                      onError={(e) => {
-                                        e.target.style.display = 'none';
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleWeeklyFightSave(day)}
-                          className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-500 transition-colors"
-                          disabled={!editForm.image}
-                        >
-                          บันทึก
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingId(null);
-                            setEditForm({});
-                          }}
-                          className="flex-1 bg-gray-700 text-white px-3 py-2 rounded text-sm hover:bg-gray-600 transition-colors"
-                        >
-                          ยกเลิก
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <h4 className="text-white font-semibold text-lg">{labelEn} ({label})</h4>
-                        <button
-                          onClick={() => {
-                            setEditingId(`fight-${day}`);
-                            setEditForm({
-                              image: weeklyFight.image || '',
-                              logos: weeklyFight.logos || []
-                            });
-                          }}
-                          className="bg-yellow-500 text-black px-4 py-2 rounded text-sm font-semibold hover:bg-yellow-400 transition-colors"
-                        >
-                          {weeklyFight.image ? 'แก้ไข' : 'อัพโหลดภาพ'}
-                        </button>
-                      </div>
-                      
-                      {weeklyFight.image ? (
-                        <div className="space-y-3">
-                          <div className="bg-gray-800 rounded p-3">
-                            <img
-                              src={weeklyFight.image}
-                              alt={`${labelEn} Fight`}
-                              className="w-full max-h-64 object-contain rounded"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'block';
-                              }}
-                            />
-                            <p className="text-xs text-red-400 hidden mt-1">ไม่สามารถโหลดภาพได้</p>
-                          </div>
-                          
-                          {weeklyFight.logos && weeklyFight.logos.length > 0 && (
-                            <div className="bg-gray-800 rounded p-3">
-                              <p className="text-xs text-gray-400 mb-2">โลโก้:</p>
-                              <div className="flex gap-2 flex-wrap">
-                                {weeklyFight.logos.filter(l => l).map((logo, logoIndex) => (
-                                  <div key={logoIndex} className="bg-gray-900 rounded p-2 flex items-center justify-center" style={{ width: '80px', height: '40px' }}>
-                                    <img
-                                      src={logo}
-                                      alt={`Logo ${logoIndex + 1}`}
-                                      className="max-w-full max-h-full object-contain"
-                                      onError={(e) => {
-                                        e.target.style.display = 'none';
-                                      }}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          <button
-                            onClick={() => handleWeeklyFightDelete(day)}
-                            className="w-full bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-500 transition-colors"
-                          >
-                            ลบภาพ
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="bg-gray-800 rounded p-8 border-2 border-dashed border-gray-600 text-center">
-                          <p className="text-gray-400 mb-3">ยังไม่มีภาพสำหรับวันนี้</p>
-                          <button
-                            onClick={() => {
-                              setEditingId(`fight-${day}`);
-                              setEditForm({
-                                image: '',
-                                logos: []
-                              });
-                            }}
-                            className="bg-yellow-500 text-black px-4 py-2 rounded text-sm font-semibold hover:bg-yellow-400 transition-colors"
-                          >
-                            อัพโหลดภาพ
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

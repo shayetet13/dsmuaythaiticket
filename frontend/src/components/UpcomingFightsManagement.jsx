@@ -126,7 +126,8 @@ const UpcomingFightsManagement = () => {
     setEditingSchedule('new');
     setEditForm({
       image: '',
-      days: []
+      days: [],
+      name: ''
     });
   };
 
@@ -134,7 +135,8 @@ const UpcomingFightsManagement = () => {
     setEditingSchedule(schedule.id);
     setEditForm({
       image: schedule.image,
-      days: [...schedule.days]
+      days: [...schedule.days],
+      name: schedule.name || ''
     });
   };
 
@@ -158,12 +160,13 @@ const UpcomingFightsManagement = () => {
         updatedSchedules = [...currentSchedules, {
           id: newId,
           image: editForm.image,
-          days: editForm.days
+          days: editForm.days,
+          name: editForm.name || ''
         }];
       } else {
         updatedSchedules = currentSchedules.map(s =>
           s.id === editingSchedule
-            ? { ...s, image: editForm.image, days: editForm.days }
+            ? { ...s, image: editForm.image, days: editForm.days, name: editForm.name || '' }
             : s
         );
       }
@@ -215,7 +218,8 @@ const UpcomingFightsManagement = () => {
     setEditForm({
       image: '',
       date: '',
-      stadiumId: 'rajadamnern'
+      stadiumId: 'rajadamnern',
+      name: ''
     });
   };
 
@@ -224,7 +228,8 @@ const UpcomingFightsManagement = () => {
     setEditForm({
       image: match.image,
       date: match.date,
-      stadiumId: match.stadiumId || 'rajadamnern'
+      stadiumId: match.stadiumId || 'rajadamnern',
+      name: match.name || ''
     });
   };
 
@@ -245,13 +250,15 @@ const UpcomingFightsManagement = () => {
         result = await addSpecialMatch({
           image: editForm.image,
           date: editForm.date,
-          stadiumId: editForm.stadiumId
+          stadiumId: editForm.stadiumId,
+          name: editForm.name || ''
         });
       } else {
         result = await updateSpecialMatch(editingMatch, {
           image: editForm.image,
           date: editForm.date,
-          stadiumId: editForm.stadiumId
+          stadiumId: editForm.stadiumId,
+          name: editForm.name || ''
         });
       }
 
@@ -407,6 +414,18 @@ const UpcomingFightsManagement = () => {
               </div>
 
               <div className="space-y-4">
+                {/* Match Name */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">ชื่อแมตช์</label>
+                  <input
+                    type="text"
+                    value={editForm.name || ''}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded px-4 py-2"
+                    placeholder="เช่น xxxxxx ประจำวันจันทร์ อังคาร พุธ"
+                  />
+                </div>
+
                 {/* Image Upload */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-2">เลือกรูปภาพ</label>
@@ -482,6 +501,12 @@ const UpcomingFightsManagement = () => {
                         className="w-full h-32 object-cover rounded"
                       />
                     </div>
+                    {schedule.name && (
+                      <div className="mb-3">
+                        <p className="text-sm text-gray-400 mb-1">ชื่อแมตช์:</p>
+                        <p className="text-white font-semibold">{schedule.name}</p>
+                      </div>
+                    )}
                     <div className="mb-3">
                       <p className="text-sm text-gray-400 mb-1">แสดงในวัน:</p>
                       <div className="flex flex-wrap gap-1">
@@ -584,6 +609,18 @@ const UpcomingFightsManagement = () => {
                   />
                 </div>
 
+                {/* Match Name */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">ชื่อแมตช์</label>
+                  <input
+                    type="text"
+                    value={editForm.name || ''}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded px-4 py-2"
+                    placeholder="เช่น แมตช์พิเศษ..."
+                  />
+                </div>
+
                 {/* Image Upload */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-2">เลือกรูปภาพ</label>
@@ -642,6 +679,12 @@ const UpcomingFightsManagement = () => {
                       <p className="text-sm text-gray-400 mb-1">วันที่:</p>
                       <p className="text-white font-semibold">{match.date}</p>
                     </div>
+                    {match.name && (
+                      <div className="mb-3">
+                        <p className="text-sm text-gray-400 mb-1">ชื่อแมตช์:</p>
+                        <p className="text-white font-semibold">{match.name}</p>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditSpecialMatch(match)}

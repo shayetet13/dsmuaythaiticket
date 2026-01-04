@@ -147,6 +147,15 @@ const defaultData = {
     saturday: { image: '', logos: [] },
     sunday: { image: '', logos: [] }
   },
+  weeklyMatchNames: {
+    monday: { name: '' },
+    tuesday: { name: '' },
+    wednesday: { name: '' },
+    thursday: { name: '' },
+    friday: { name: '' },
+    saturday: { name: '' },
+    sunday: { name: '' }
+  },
   stadiumImageSchedules: {
     rajadamnern: [],
     lumpinee: [],
@@ -154,7 +163,11 @@ const defaultData = {
     patong: []
   },
   specialMatches: [],
-  promptPayQr: null
+  promptPayQr: null,
+  upcomingFightsBackground: {
+    image: '/images/upcoming-fights-bg.jpg',
+    fallback: '/images/highlights/World class fighters.jpg'
+  }
 };
 
 const DB_NAME = 'mticket-images-db';
@@ -588,5 +601,107 @@ export const deleteSpecialMatch = async (id) => {
   } catch (error) {
     console.error('Error deleting special match:', error);
     return false;
+  }
+};
+
+// Get upcoming fights background image
+export const getUpcomingFightsBackground = async () => {
+  try {
+    const data = await getAllData();
+    const background = data.upcomingFightsBackground || defaultData.upcomingFightsBackground;
+    return {
+      image: background.image,
+      fallback: background.fallback || '/images/highlights/World class fighters.jpg'
+    };
+  } catch (error) {
+    console.error('Error getting upcoming fights background:', error);
+    return defaultData.upcomingFightsBackground;
+  }
+};
+
+// Update upcoming fights background image
+export const updateUpcomingFightsBackground = async (image, fallback = null) => {
+  try {
+    const data = await getAllData();
+    if (!data.upcomingFightsBackground) {
+      data.upcomingFightsBackground = { ...defaultData.upcomingFightsBackground };
+    }
+    data.upcomingFightsBackground = {
+      ...data.upcomingFightsBackground,
+      image: image,
+      fallback: fallback || data.upcomingFightsBackground.fallback || '/images/highlights/World class fighters.jpg'
+    };
+    await saveData(data);
+    return data.upcomingFightsBackground;
+  } catch (error) {
+    console.error('Error updating upcoming fights background:', error);
+    return null;
+  }
+};
+
+// Get weekly match names
+export const getWeeklyMatchNames = async () => {
+  try {
+    const data = await getAllData();
+    return data.weeklyMatchNames || defaultData.weeklyMatchNames;
+  } catch (error) {
+    console.error('Error getting weekly match names:', error);
+    return defaultData.weeklyMatchNames;
+  }
+};
+
+// Update weekly match name by day
+export const updateWeeklyMatchName = async (day, name) => {
+  try {
+    const dbData = await getAllData();
+    const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    if (!validDays.includes(day)) {
+      console.error('Invalid day:', day);
+      return null;
+    }
+    
+    if (!dbData.weeklyMatchNames) {
+      dbData.weeklyMatchNames = { ...defaultData.weeklyMatchNames };
+    }
+    dbData.weeklyMatchNames[day] = { name: name || '' };
+    await saveData(dbData);
+    return dbData.weeklyMatchNames[day];
+  } catch (error) {
+    console.error('Error updating weekly match name:', error);
+    return null;
+  }
+};
+
+// Update weekly fight with name and image
+export const updateWeeklyFightWithName = async (day, data) => {
+  try {
+    const dbData = await getAllData();
+    const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    if (!validDays.includes(day)) {
+      console.error('Invalid day:', day);
+      return null;
+    }
+    
+    if (!dbData.weeklyFights) {
+      dbData.weeklyFights = defaultData.weeklyFights;
+    }
+    const { name, ...fightData } = data;
+    dbData.weeklyFights[day] = { ...dbData.weeklyFights[day], ...fightData };
+    
+    if (!dbData.weeklyMatchNames) {
+      dbData.weeklyMatchNames = { ...defaultData.weeklyMatchNames };
+    }
+    if (name !== undefined) {
+      dbData.weeklyMatchNames[day] = { name: name || '' };
+    }
+    
+    await saveData(dbData);
+    return {
+      fight: dbData.weeklyFights[day],
+      name: dbData.weeklyMatchNames[day]
+    };
+  } catch (error) {
+    console.error('Error updating weekly fight with name:', error);
+    return null;
   }
 };

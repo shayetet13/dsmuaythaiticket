@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket, Calendar, MapPin, Plus, X, Save, Trash2, Edit2, ArrowLeft, ChevronLeft } from 'lucide-react';
 import axios from 'axios';
-import { getStadiums } from '../db/imagesDb';
+import { getStadiums, getStadiumImageSchedules } from '../db/imagesDb';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -14,11 +14,15 @@ const TicketsManagement = () => {
   const [success, setSuccess] = useState('');
   const [editingRegular, setEditingRegular] = useState(null);
   const [editingSpecial, setEditingSpecial] = useState(null);
-  const [editRegularForm, setEditRegularForm] = useState({ name: '', price: '', quantity: '' });
+  const [editRegularForm, setEditRegularForm] = useState({ name: '', price: '', quantity: '', match_id: '', match_name: '', days: [] });
   const [editSpecialForm, setEditSpecialForm] = useState({ name: '', price: '', date: '', quantity: '' });
   const [newRegularTicket, setNewRegularTicket] = useState({ name: '', price: '', quantity: '' });
   const [newSpecialTicket, setNewSpecialTicket] = useState({ name: '', price: '', date: '', quantity: '' });
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [matches, setMatches] = useState([]);
+  const [selectedMatch, setSelectedMatch] = useState(null);
+  const [pendingTickets, setPendingTickets] = useState([]);
+  const [selectedDays, setSelectedDays] = useState([]);
 
   useEffect(() => {
     loadStadiums();
@@ -27,8 +31,20 @@ const TicketsManagement = () => {
   useEffect(() => {
     if (selectedStadium) {
       loadTicketConfig(selectedStadium);
+      loadMatches(selectedStadium);
     }
   }, [selectedStadium]);
+
+  const loadMatches = async (stadiumId) => {
+    try {
+      const schedules = await getStadiumImageSchedules();
+      const stadiumMatches = schedules[stadiumId] || [];
+      setMatches(stadiumMatches);
+    } catch (err) {
+      console.error('Error loading matches:', err);
+      setMatches([]);
+    }
+  };
 
   const loadStadiums = async () => {
     try {
@@ -94,48 +110,126 @@ const TicketsManagement = () => {
     return scheduleDays.includes(dayOfWeek);
   };
 
-  const handleAddRegularTicket = async (clearForm = false) => {
-    if (!selectedStadium || !newRegularTicket.name || !newRegularTicket.price) {
+  // Get match name based on stadium and day of week
+  const getMatchName = (stadiumId, dayOfWeek) => {
+    // dayOfWeek: 0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday
+    const matchSchedule = {
+      rajadamnern: {
+        0: 'KIATPETCH MUAY THAI',  // Sunday
+        1: 'RAJADAMNERN KNOCKOUT', // Monday
+        2: 'RAJADAMNERN KNOCKOUT', // Tuesday
+        3: 'NEW POWER MUAY THAI',  // Wednesday
+        4: 'PETHYINDEE MUAY THAI', // Thursday
+        5: 'RAJADAMNERN KNOCKOUT', // Friday
+        6: 'RWS – MUAY THAI'       // Saturday
+      },
+      lumpinee: {
+        5: 'ONE LUMPINEE',         // Friday
+        6: 'ONE FIGHT NIGHT'       // Saturday
+      },
+      bangla: {
+        0: 'MUAY THAI BANGLA PHUKET', // Sunday
+        3: 'MUAY THAI BANGLA PHUKET', // Wednesday
+        5: 'MUAY THAI BANGLA PHUKET'  // Friday
+      },
+      patong: {
+        1: 'MUAY THAI PATONG PHUKET', // Monday
+        4: 'MUAY THAI PATONG PHUKET', // Thursday
+        6: 'MUAY THAI PATONG PHUKET'  // Saturday
+      }
+    };
+
+    return matchSchedule[stadiumId]?.[dayOfWeek] || '';
+  };
+
+  // Get day name in Thai
+  const getDayName = (dayOfWeek) => {
+    const dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    return dayNames[dayOfWeek] || '';
+  };
+
+  const handleAddToPending = () => {
+    if (!newRegularTicket.name || !newRegularTicket.price) {
       setError('กรุณากรอกชื่อและราคาตั๋ว');
       return;
     }
 
+    const ticket = {
+      id: `pending-${Date.now()}-${Math.random()}`,
+      name: newRegularTicket.name,
+      price: parseFloat(newRegularTicket.price),
+      quantity: parseInt(newRegularTicket.quantity) || 0
+    };
+
+    setPendingTickets([...pendingTickets, ticket]);
+    setNewRegularTicket({ name: '', price: '', quantity: '' });
+    setError('');
+  };
+
+  const handleRemovePendingTicket = (ticketId) => {
+    setPendingTickets(pendingTickets.filter(t => t.id !== ticketId));
+  };
+
+  const handleSavePendingTickets = async () => {
+    if (pendingTickets.length === 0) {
+      setError('กรุณาเพิ่มตั๋วก่อน');
+      return;
+    }
+
+    if (selectedDays.length === 0) {
+      setError('กรุณาเลือกวันที่จะแสดงราคาตั๋ว');
+      return;
+    }
+
+    if (!selectedStadium) {
+      setError('กรุณาเลือกสนาม');
+      return;
+    }
+
     try {
-      const response = await axios.post(`${API_URL}/stadiums/${selectedStadium}/tickets/regular`, {
-        name: newRegularTicket.name,
-        price: newRegularTicket.price,
-        quantity: newRegularTicket.quantity || 0
-      });
+      // Save all pending tickets with selected days
+      const promises = pendingTickets.map(ticket =>
+        axios.post(`${API_URL}/stadiums/${selectedStadium}/tickets/regular`, {
+          name: ticket.name,
+          price: ticket.price,
+          quantity: ticket.quantity,
+          match_id: null,
+          match_name: null,
+          days: selectedDays
+        })
+      );
+
+      await Promise.all(promises);
       
-      console.log('Ticket added successfully:', response.data);
       setError('');
-      setSuccess('เพิ่มตั๋วสำเร็จ!');
+      setSuccess(`เพิ่มตั๋ว ${pendingTickets.length} แบบสำเร็จ!`);
       setTimeout(() => setSuccess(''), 3000);
       
-      // Reload ticket config to show new ticket
-      console.log('Reloading ticket config for:', selectedStadium);
-      await loadTicketConfig(selectedStadium);
+      // Clear pending tickets and selected days
+      setPendingTickets([]);
+      setSelectedDays([]);
       
-      // Only clear form if explicitly requested
-      if (clearForm) {
-        setNewRegularTicket({ name: '', price: '', quantity: '' });
-      }
+      // Reload ticket config
+      await loadTicketConfig(selectedStadium);
     } catch (err) {
-      console.error('Error adding regular ticket:', err);
+      console.error('Error saving pending tickets:', err);
       const errorMessage = err.response?.data?.error || err.message || 'ไม่สามารถเพิ่มตั๋วได้';
       setError(`ไม่สามารถเพิ่มตั๋วได้: ${errorMessage}`);
       setSuccess('');
     }
   };
 
-  const handleUpdateRegularTicket = async (ticketId, name, price, quantity) => {
+  const handleUpdateRegularTicket = async (ticketId, name, price, quantity, match_id, match_name, days) => {
     if (!selectedStadium || !name || !price) return;
 
     try {
       await axios.put(`${API_URL}/stadiums/${selectedStadium}/tickets/regular/${ticketId}`, {
         name,
         price,
-        quantity: quantity || 0
+        quantity: quantity || 0,
+        match_id: match_id !== '' ? parseInt(match_id) : null,
+        match_name: match_name || '',
+        days: days || []
       });
       setEditingRegular(null);
       setError('');
@@ -364,157 +458,303 @@ const TicketsManagement = () => {
               </h3>
             </div>
 
-            {/* Add New Regular Ticket */}
-            <div className="bg-gray-900 rounded-lg p-4 mb-4 border border-gray-700">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-3">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">ชื่อตั๋ว</label>
-                  <input
-                    type="text"
-                    value={newRegularTicket.name}
-                    onChange={(e) => setNewRegularTicket({ ...newRegularTicket, name: e.target.value })}
-                    placeholder="เช่น VIP Ringside"
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">ราคา (บาท)</label>
-                  <input
-                    type="number"
-                    value={newRegularTicket.price}
-                    onChange={(e) => setNewRegularTicket({ ...newRegularTicket, price: e.target.value })}
-                    placeholder="2500"
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">จำนวนตั๋ว</label>
-                  <input
-                    type="number"
-                    value={newRegularTicket.quantity}
-                    onChange={(e) => setNewRegularTicket({ ...newRegularTicket, quantity: e.target.value })}
-                    placeholder="100"
-                    min="0"
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleAddRegularTicket(false)}
-                    className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-green-400 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    เพิ่ม
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleAddRegularTicket(true);
-                    }}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-blue-400 transition-colors"
-                    title="เพิ่มและเคลียร์ฟอร์ม"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <X className="w-3 h-3" />
-                  </button>
+            {/* Add Ticket Form */}
+            <div className="bg-gray-900 rounded-lg p-4 mb-6 border border-gray-700">
+              <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <h4 className="text-lg font-black text-white uppercase tracking-wider mb-4">สร้างตั๋ว</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">ชื่อตั๋ว</label>
+                    <input
+                      type="text"
+                      value={newRegularTicket.name}
+                      onChange={(e) => setNewRegularTicket({ ...newRegularTicket, name: e.target.value })}
+                      placeholder="เช่น VIP Ringside"
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">ราคา (บาท)</label>
+                    <input
+                      type="number"
+                      value={newRegularTicket.price}
+                      onChange={(e) => setNewRegularTicket({ ...newRegularTicket, price: e.target.value })}
+                      placeholder="2500"
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">จำนวนตั๋ว</label>
+                    <input
+                      type="number"
+                      value={newRegularTicket.quantity}
+                      onChange={(e) => setNewRegularTicket({ ...newRegularTicket, quantity: e.target.value })}
+                      placeholder="100"
+                      min="0"
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 text-white"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleAddToPending}
+                      className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-blue-400 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      เพิ่มในรายการ
+                    </button>
+                    <button
+                      onClick={() => {
+                        setNewRegularTicket({ name: '', price: '', quantity: '' });
+                      }}
+                      className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 rounded-lg font-semibold"
+                      title="เคลียร์ฟอร์ม"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-              {(newRegularTicket.name || newRegularTicket.price) && (
-                <button
-                  onClick={() => setNewRegularTicket({ name: '', price: '', quantity: '' })}
-                  className="text-gray-400 hover:text-white text-sm flex items-center gap-1"
-                >
-                  <X className="w-3 h-3" />
-                  เคลียร์ฟอร์ม
-                </button>
+
+              {/* Pending Tickets List */}
+              {pendingTickets.length > 0 && (
+                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 mt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h5 className="text-md font-black text-white uppercase tracking-wider">
+                      ตั๋วที่รอกำหนดวัน ({pendingTickets.length} แบบ)
+                    </h5>
+                    <button
+                      onClick={() => {
+                        setPendingTickets([]);
+                        setSelectedDays([]);
+                      }}
+                      className="text-gray-400 hover:text-white text-sm"
+                    >
+                      <X className="w-4 h-4" /> ล้างทั้งหมด
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-2 mb-4">
+                    {pendingTickets.map((ticket) => (
+                      <div
+                        key={ticket.id}
+                        className="bg-gray-900 rounded-lg p-3 border border-gray-600 flex items-center justify-between"
+                      >
+                        <div className="flex-1">
+                          <div className="text-white font-semibold">{ticket.name}</div>
+                          <div className="text-yellow-500 text-sm font-black">฿{ticket.price.toLocaleString()}</div>
+                          <div className="text-gray-400 text-xs mt-1">
+                            จำนวน: {ticket.quantity} ใบ
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemovePendingTicket(ticket.id)}
+                          className="text-red-500 hover:text-red-400 p-2"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Day Selection for all pending tickets */}
+                  <div className="mb-4">
+                    <label className="block text-sm text-gray-400 mb-2">เลือกวันที่จะแสดงราคาตั๋วทั้งหมดนี้</label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {selectedStadiumData?.scheduleDays?.map((day) => {
+                        const dayName = getDayName(day);
+                        const isChecked = selectedDays.includes(day);
+                        return (
+                          <label
+                            key={day}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                              isChecked
+                                ? 'bg-yellow-500 text-black font-semibold'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedDays([...selectedDays, day]);
+                                } else {
+                                  setSelectedDays(selectedDays.filter(d => d !== day));
+                                }
+                              }}
+                              className="w-4 h-4 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500"
+                            />
+                            <span>วัน{dayName}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {selectedDays.length > 0 && (
+                      <p className="text-gray-400 text-xs mt-2">
+                        เลือกแล้ว: {selectedDays.map(d => getDayName(d)).join(', ')}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleSavePendingTickets}
+                      className="bg-green-500 text-white px-6 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-green-400 transition-colors"
+                    >
+                      <Save className="w-4 h-4" />
+                      บันทึกตั๋วทั้งหมด ({pendingTickets.length} แบบ)
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Regular Tickets List */}
-            <div className="space-y-3">
-              {ticketConfig?.regularTickets?.length === 0 ? (
-                <p className="text-gray-400 text-center py-4">ยังไม่มีตั๋วปกติ</p>
-              ) : (
-                ticketConfig?.regularTickets?.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="bg-gray-900 rounded-lg p-4 border border-gray-700 flex items-center justify-between"
-                  >
-                    {editingRegular === ticket.id ? (
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 flex-1">
-                        <input
-                          type="text"
-                          value={editRegularForm.name}
-                          onChange={(e) => setEditRegularForm({ ...editRegularForm, name: e.target.value })}
-                          className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white"
-                          placeholder="ชื่อตั๋ว"
-                        />
-                        <input
-                          type="number"
-                          value={editRegularForm.price}
-                          onChange={(e) => setEditRegularForm({ ...editRegularForm, price: e.target.value })}
-                          className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white"
-                          placeholder="ราคา"
-                        />
-                        <input
-                          type="number"
-                          value={editRegularForm.quantity}
-                          onChange={(e) => setEditRegularForm({ ...editRegularForm, quantity: e.target.value })}
-                          className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white"
-                          placeholder="จำนวน"
-                          min="0"
-                        />
-                        <button
-                          onClick={() => {
-                            handleUpdateRegularTicket(ticket.id, editRegularForm.name, editRegularForm.price, editRegularForm.quantity);
-                          }}
-                          className="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-400 transition-colors flex items-center justify-center"
-                        >
-                          <Save className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingRegular(null);
-                            setEditRegularForm({ name: '', price: '', quantity: '' });
-                          }}
-                          className="text-gray-400 hover:text-white p-2 flex items-center justify-center"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex-1">
-                          <div className="text-white font-semibold">{ticket.name}</div>
-                          <div className="text-yellow-500 text-lg font-black">฿{parseFloat(ticket.price).toLocaleString()}</div>
-                          <div className="text-gray-400 text-sm mt-1">
-                            จำนวนคงเหลือ: <span className={`font-semibold ${(ticket.quantity || 0) <= 10 ? 'text-red-400' : 'text-green-400'}`}>
-                              {ticket.quantity !== undefined && ticket.quantity !== null ? ticket.quantity : 0} ใบ
-                            </span>
+            {/* All Tickets List */}
+            {(() => {
+              const allTickets = ticketConfig?.regularTickets || [];
+              
+              if (allTickets.length === 0) {
+                return (
+                  <p className="text-gray-400 text-center py-4">ยังไม่มีตั๋วปกติ</p>
+                );
+              }
+
+              return (
+                <div className="space-y-3">
+                  {allTickets.map((ticket) => (
+                    <div
+                      key={ticket.id}
+                      className="bg-gray-900 rounded-lg p-4 border border-gray-700 flex items-center justify-between"
+                    >
+                      {editingRegular === ticket.id ? (
+                        <div className="w-full space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <input
+                              type="text"
+                              value={editRegularForm.name}
+                              onChange={(e) => setEditRegularForm({ ...editRegularForm, name: e.target.value })}
+                              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                              placeholder="ชื่อตั๋ว"
+                            />
+                            <input
+                              type="number"
+                              value={editRegularForm.price}
+                              onChange={(e) => setEditRegularForm({ ...editRegularForm, price: e.target.value })}
+                              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                              placeholder="ราคา"
+                            />
+                            <input
+                              type="number"
+                              value={editRegularForm.quantity}
+                              onChange={(e) => setEditRegularForm({ ...editRegularForm, quantity: e.target.value })}
+                              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                              placeholder="จำนวน"
+                              min="0"
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  handleUpdateRegularTicket(ticket.id, editRegularForm.name, editRegularForm.price, editRegularForm.quantity, editRegularForm.match_id, editRegularForm.match_name, editRegularForm.days);
+                                }}
+                                className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-400 transition-colors flex items-center justify-center"
+                              >
+                                <Save className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingRegular(null);
+                                  setEditRegularForm({ name: '', price: '', quantity: '', match_id: '', match_name: '', days: [] });
+                                }}
+                                className="text-gray-400 hover:text-white p-2 flex items-center justify-center"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm text-gray-400 mb-2">เลือกวันที่จะแสดงราคาตั๋วนี้</label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              {selectedStadiumData?.scheduleDays?.map((day) => {
+                                const dayName = getDayName(day);
+                                const isChecked = editRegularForm.days?.includes(day) || false;
+                                return (
+                                  <label
+                                    key={day}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                                      isChecked
+                                        ? 'bg-yellow-500 text-black font-semibold'
+                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                    }`}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={(e) => {
+                                        const currentDays = editRegularForm.days || [];
+                                        if (e.target.checked) {
+                                          setEditRegularForm({ ...editRegularForm, days: [...currentDays, day] });
+                                        } else {
+                                          setEditRegularForm({ ...editRegularForm, days: currentDays.filter(d => d !== day) });
+                                        }
+                                      }}
+                                      className="w-4 h-4 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500"
+                                    />
+                                    <span>วัน{dayName}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setEditingRegular(ticket.id);
-                              setEditRegularForm({ name: ticket.name, price: ticket.price, quantity: ticket.quantity || '' });
-                            }}
-                            className="text-yellow-500 hover:text-yellow-400 p-2"
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteRegularTicket(ticket.id)}
-                            className="text-red-500 hover:text-red-400 p-2"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
+                      ) : (
+                        <>
+                          <div className="flex-1">
+                            <div className="text-white font-semibold">{ticket.name}</div>
+                            <div className="text-yellow-500 text-lg font-black">฿{parseFloat(ticket.price).toLocaleString()}</div>
+                            <div className="text-gray-400 text-sm mt-1">
+                              จำนวนคงเหลือ: <span className={`font-semibold ${(ticket.quantity || 0) <= 10 ? 'text-red-400' : 'text-green-400'}`}>
+                                {ticket.quantity !== undefined && ticket.quantity !== null ? ticket.quantity : 0} ใบ
+                              </span>
+                            </div>
+                            {ticket.days && ticket.days.length > 0 && (
+                              <div className="text-gray-400 text-xs mt-1">
+                                วัน: {ticket.days.map(d => getDayName(d)).join(', ')}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingRegular(ticket.id);
+                                setEditRegularForm({ 
+                                  name: ticket.name, 
+                                  price: ticket.price, 
+                                  quantity: ticket.quantity || '',
+                                  match_id: ticket.match_id !== null && ticket.match_id !== undefined ? ticket.match_id.toString() : '',
+                                  match_name: ticket.match_name || '',
+                                  days: ticket.days || []
+                                });
+                              }}
+                              className="text-yellow-500 hover:text-yellow-400 p-2"
+                            >
+                              <Edit2 className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRegularTicket(ticket.id)}
+                              className="text-red-500 hover:text-red-400 p-2"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Special Tickets Section */}
@@ -642,6 +882,10 @@ const TicketsManagement = () => {
                       const isAvailable = availableDates.includes(dateString);
                       const isSelected = newSpecialTicket.date === dateString;
                       const isPast = date < today;
+                      const dayOfWeek = date.getDay();
+                      const dayNames = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+                      const dayName = dayNames[dayOfWeek];
+                      const matchName = selectedStadium ? getMatchName(selectedStadium, dayOfWeek) : '';
                       
                       days.push(
                         <div
@@ -661,7 +905,17 @@ const TicketsManagement = () => {
                             }
                           `}
                         >
-                          {day}
+                          <div className="text-xs font-semibold mb-1 opacity-70">
+                            {dayName}
+                          </div>
+                          <div className="text-lg font-bold">
+                            {day}
+                          </div>
+                          {isAvailable && !isPast && matchName && (
+                            <div className="text-[10px] mt-1 opacity-80 leading-tight">
+                              {matchName}
+                            </div>
+                          )}
                         </div>
                       );
                     }

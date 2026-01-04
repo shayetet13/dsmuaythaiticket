@@ -3,6 +3,60 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import AnimatedItem from './AnimatedItem';
 import { isSameDay, formatDateDisplay } from '../utils/dateHelpers';
 
+// Get match name based on stadium and day of week
+const getMatchName = (stadiumId, dayOfWeek, dateStr = null, stadiumImageSchedules = {}, specialMatches = []) => {
+  // First, check for special matches (exact date match)
+  if (specialMatches && specialMatches.length > 0 && dateStr) {
+    const specialMatch = specialMatches.find(match => 
+      match.stadiumId === stadiumId && match.date === dateStr
+    );
+    if (specialMatch && specialMatch.name) {
+      return specialMatch.name;
+    }
+  }
+
+  // Second, check for scheduled images with names (day of week match)
+  const schedules = stadiumImageSchedules[stadiumId] || [];
+  if (schedules.length > 0) {
+    const matchingSchedules = schedules.filter(schedule => 
+      schedule.days && schedule.days.includes(dayOfWeek) && schedule.name
+    );
+    if (matchingSchedules.length > 0) {
+      // Use the first matching schedule with a name
+      return matchingSchedules[0].name;
+    }
+  }
+
+  // Fallback to default names
+  const matchSchedule = {
+    rajadamnern: {
+      0: 'KIATPETCH MUAY THAI',  // Sunday
+      1: 'RAJADAMNERN KNOCKOUT', // Monday
+      2: 'RAJADAMNERN KNOCKOUT', // Tuesday
+      3: 'NEW POWER MUAY THAI',  // Wednesday
+      4: 'PETHYINDEE MUAY THAI', // Thursday
+      5: 'RAJADAMNERN KNOCKOUT', // Friday
+      6: 'RWS – MUAY THAI'       // Saturday
+    },
+    lumpinee: {
+      5: 'ONE LUMPINEE',         // Friday
+      6: 'ONE FIGHT NIGHT'       // Saturday
+    },
+    bangla: {
+      0: 'MUAY THAI BANGLA PHUKET', // Sunday
+      3: 'MUAY THAI BANGLA PHUKET', // Wednesday
+      5: 'MUAY THAI BANGLA PHUKET'  // Friday
+    },
+    patong: {
+      1: 'MUAY THAI PATONG PHUKET', // Monday
+      4: 'MUAY THAI PATONG PHUKET', // Thursday
+      6: 'MUAY THAI PATONG PHUKET'  // Saturday
+    }
+  };
+
+  return matchSchedule[stadiumId]?.[dayOfWeek] || '';
+};
+
 const BookingSection = ({
   bookingStep,
   setBookingStep,
@@ -22,7 +76,9 @@ const BookingSection = ({
   handleBooking,
   language,
   t,
-  ticketConfigs
+  ticketConfigs,
+  stadiumImageSchedules = {},
+  specialMatches = []
 }) => {
   return (
     <section id="booking" className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-gray-800" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)', backgroundSize: '20px 20px' }}>
@@ -97,12 +153,34 @@ const BookingSection = ({
 
           // Check if date has available tickets
           const hasAvailableTickets = (dateString) => {
-            const date = new Date(dateString);
-            date.setHours(0, 0, 0, 0);
+            // Parse date string (YYYY-MM-DD) directly to avoid timezone issues
+            const [year, month, day] = dateString.split('-').map(Number);
+            const date = new Date(year, month - 1, day, 12, 0, 0); // Use noon to avoid timezone issues
+            const dayOfWeek = date.getDay();
             
-            // Check regular tickets - at least one must have quantity > 0
+            // Check regular tickets - must have days that include this day of week and quantity > 0
             const hasRegularTickets = ticketConfig.regularTickets && ticketConfig.regularTickets.length > 0
-              && ticketConfig.regularTickets.some(ticket => (ticket.quantity || 0) > 0);
+              && ticketConfig.regularTickets.some(ticket => {
+                // Parse days if it's a string (JSON)
+                let ticketDays = ticket.days;
+                if (typeof ticketDays === 'string') {
+                  try {
+                    ticketDays = ticketDays ? JSON.parse(ticketDays) : null;
+                  } catch (e) {
+                    ticketDays = null;
+                  }
+                }
+                
+                // Ensure ticketDays is an array
+                if (!Array.isArray(ticketDays)) {
+                  ticketDays = [];
+                }
+                
+                // Check if ticket has days array and it includes the selected day
+                const hasMatchingDay = ticketDays.length > 0 && ticketDays.includes(dayOfWeek);
+                const hasQuantity = (ticket.quantity || 0) > 0;
+                return hasMatchingDay && hasQuantity;
+              });
             
             // Check special tickets for this date - at least one must have quantity > 0
             const specialTicketsForDate = ticketConfig.specialTickets && ticketConfig.specialTickets.filter(ticket => {
@@ -121,8 +199,9 @@ const BookingSection = ({
           // Get available dates for this stadium based on selected month and scheduleDays
           const availableDates = (() => {
             const dates = [];
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            // Get today's date in local timezone
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
             
             // Get first and last day of the selected month
             const year = bookingCalendarMonth.getFullYear();
@@ -131,14 +210,15 @@ const BookingSection = ({
             
             // Get all days in the month
             for (let day = 1; day <= lastDay.getDate(); day++) {
-              const date = new Date(year, month, day);
+              const date = new Date(year, month, day, 12, 0, 0); // Use noon to avoid timezone issues
               const dayOfWeek = date.getDay();
               
               // Only show dates that are today or in the future
               if (date >= today) {
                 // Check if this day is in the stadium's schedule
                 if (selectedStadiumData.scheduleDays && selectedStadiumData.scheduleDays.includes(dayOfWeek)) {
-                  const dateString = date.toISOString().split('T')[0];
+                  // Create dateString directly from year, month, day to avoid timezone issues
+                  const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                   dates.push({
                     date: date,
                     dateString: dateString,
@@ -228,6 +308,7 @@ const BookingSection = ({
                     : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                   const dayName = dayNames[date.getDay()];
                   const dayNumber = date.getDate();
+                  const matchName = selectedStadium ? getMatchName(selectedStadium, date.getDay(), item.dateString, stadiumImageSchedules, specialMatches) : '';
 
                   return (
                     <AnimatedItem key={index} delay={index * 50}>
@@ -262,6 +343,11 @@ const BookingSection = ({
                           }`}>
                             {dayNumber}
                           </div>
+                          {!isSoldOut && matchName && (
+                            <div className="text-[10px] sm:text-xs mt-2 opacity-80 leading-tight text-gray-300">
+                              {matchName}
+                            </div>
+                          )}
                           {isSoldOut && (
                             <div className="text-red-400 text-xs sm:text-sm font-bold uppercase mt-1">
                               {language === 'th' ? 'หมดแล้ว' : 'SOLD OUT'}
@@ -286,16 +372,38 @@ const BookingSection = ({
           const ticketConfig = ticketConfigs[selectedStadium] || { regularTickets: [], specialTickets: [] };
           
           // Get regular tickets and special tickets for selected date
-          const selectedDateObj = new Date(selectedDate);
-          selectedDateObj.setHours(0, 0, 0, 0);
+          // Parse date string (YYYY-MM-DD) directly to avoid timezone issues
+          const [year, month, day] = selectedDate.split('-').map(Number);
+          const selectedDateObj = new Date(year, month - 1, day, 12, 0, 0);
+          const dayOfWeek = selectedDateObj.getDay();
           
           const specialTicketsForDate = ticketConfig.specialTickets?.filter(ticket => {
-            const ticketDate = new Date(ticket.date);
-            ticketDate.setHours(0, 0, 0, 0);
+            // Parse ticket date string directly
+            const [tYear, tMonth, tDay] = ticket.date.split('-').map(Number);
+            const ticketDate = new Date(tYear, tMonth - 1, tDay, 12, 0, 0);
             return ticketDate.getTime() === selectedDateObj.getTime() && (ticket.quantity || 0) > 0;
           }) || [];
           
-          const availableRegularTickets = ticketConfig.regularTickets?.filter(ticket => (ticket.quantity || 0) > 0) || [];
+          // Filter regular tickets by day of week - only show tickets that have this day in their days array
+          const availableRegularTickets = ticketConfig.regularTickets?.filter(ticket => {
+            // Parse days if it's a string (JSON)
+            let ticketDays = ticket.days;
+            if (typeof ticketDays === 'string') {
+              try {
+                ticketDays = ticketDays ? JSON.parse(ticketDays) : null;
+              } catch (e) {
+                ticketDays = null;
+              }
+            }
+            
+            // Ensure ticketDays is an array
+            if (!Array.isArray(ticketDays)) {
+              ticketDays = [];
+            }
+            
+            // Ticket must have days array with the selected day of week and quantity > 0
+            return ticketDays.length > 0 && ticketDays.includes(dayOfWeek) && (ticket.quantity || 0) > 0;
+          }) || [];
           
           // Combine all available tickets
           const availableTickets = [
@@ -334,18 +442,32 @@ const BookingSection = ({
 
               {/* Selected Stadium and Date Info */}
               <div className="mb-6 bg-gray-900 rounded-lg p-4 sm:p-6 border border-gray-700">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-gray-400 text-sm mb-1">{language === 'th' ? 'สนามมวย' : 'Stadium'}</p>
-                    <p className="text-white font-bold text-lg">{selectedStadiumData.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm mb-1">{language === 'th' ? 'วันที่' : 'Date'}</p>
-                    <p className="text-white font-bold text-lg">
-                      {formatDateDisplay(new Date(selectedDate), language)}
-                    </p>
-                  </div>
-                </div>
+                {(() => {
+                  const selectedDateObj = new Date(selectedDate);
+                  const dayOfWeek = selectedDateObj.getDay();
+                  const matchName = getMatchName(selectedStadium, dayOfWeek, selectedDate, stadiumImageSchedules, specialMatches);
+                  
+                  return (
+                    <div className={`grid gap-4 ${matchName ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+                      <div>
+                        <p className="text-gray-400 text-sm mb-1">{language === 'th' ? 'สนามมวย' : 'Stadium'}</p>
+                        <p className="text-white font-bold text-lg">{selectedStadiumData.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm mb-1">{language === 'th' ? 'วันที่' : 'Date'}</p>
+                        <p className="text-white font-bold text-lg">
+                          {formatDateDisplay(new Date(selectedDate), language)}
+                        </p>
+                      </div>
+                      {matchName && (
+                        <div>
+                          <p className="text-gray-400 text-sm mb-1">{language === 'th' ? 'ชื่อแมตช์' : 'Match Name'}</p>
+                          <p className="text-white font-bold text-lg">{matchName}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Ticket Selection */}

@@ -47,7 +47,7 @@ const App = () => {
   const [ticketConfigs, setTicketConfigs] = useState({});
 
   // Load data from database
-  const { heroImage, highlights, stadiums, weeklyFights, stadiumImageSchedules, specialMatches, dbLoaded } = useDatabase(language);
+  const { heroImage, highlights, stadiums, weeklyFights, stadiumImageSchedules, specialMatches, upcomingFightsBackground, dbLoaded } = useDatabase(language);
 
   // Translations and zones
   const t = translations[language];
@@ -235,9 +235,17 @@ const App = () => {
       if (!stadiumId) return;
       try {
         const response = await axios.get(`${API_URL}/stadiums/${stadiumId}/tickets`);
+        // Parse days from JSON string to array for regular tickets
+        const config = {
+          ...response.data,
+          regularTickets: (response.data.regularTickets || []).map(ticket => ({
+            ...ticket,
+            days: typeof ticket.days === 'string' ? (ticket.days ? JSON.parse(ticket.days) : null) : ticket.days
+          }))
+        };
         setTicketConfigs(prev => ({
           ...prev,
-          [stadiumId]: response.data
+          [stadiumId]: config
         }));
       } catch (err) {
         console.error('Error loading ticket config:', err);
@@ -253,6 +261,37 @@ const App = () => {
       loadTicketConfig(selectedStadium);
     }
   }, [selectedStadium]);
+
+  // Load all ticket configs for all stadiums (for UpcomingFightsSection)
+  useEffect(() => {
+    const loadAllTicketConfigs = async () => {
+      if (!stadiums || stadiums.length === 0) return;
+      
+      const configs = {};
+      for (const stadium of stadiums) {
+        try {
+          const response = await axios.get(`${API_URL}/stadiums/${stadium.id}/tickets`);
+          // Parse days from JSON string to array for regular tickets
+          configs[stadium.id] = {
+            ...response.data,
+            regularTickets: (response.data.regularTickets || []).map(ticket => ({
+              ...ticket,
+              days: typeof ticket.days === 'string' ? (ticket.days ? JSON.parse(ticket.days) : null) : ticket.days
+            }))
+          };
+        } catch (err) {
+          console.error(`Error loading ticket config for ${stadium.id}:`, err);
+          configs[stadium.id] = { regularTickets: [], specialTickets: [] };
+        }
+      }
+      
+      setTicketConfigs(prev => ({ ...prev, ...configs }));
+    };
+
+    if (stadiums && stadiums.length > 0) {
+      loadAllTicketConfigs();
+    }
+  }, [stadiums]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -296,6 +335,7 @@ const App = () => {
         ticketConfigs={ticketConfigs}
         stadiumImageSchedules={stadiumImageSchedules}
         specialMatches={specialMatches}
+        upcomingFightsBackground={upcomingFightsBackground}
         setSelectedStadium={setSelectedStadium}
         setSelectedDate={setSelectedDate}
         setBookingStep={setBookingStep}
@@ -333,6 +373,8 @@ const App = () => {
           language={language}
           t={t}
           ticketConfigs={ticketConfigs}
+          stadiumImageSchedules={stadiumImageSchedules}
+          specialMatches={specialMatches}
         />
       )}
 

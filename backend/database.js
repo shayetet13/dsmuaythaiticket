@@ -48,11 +48,55 @@ export const initDatabase = () => {
       name TEXT NOT NULL,
       price REAL NOT NULL,
       quantity INTEGER NOT NULL DEFAULT 0,
+      day_of_week INTEGER,
+      match_id INTEGER,
+      match_name TEXT,
+      days TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (stadium_id) REFERENCES stadiums(id)
     )
   `);
+
+  // Add day_of_week column to existing regular_tickets table if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE regular_tickets ADD COLUMN day_of_week INTEGER`);
+  } catch (err) {
+    // Column already exists, ignore error
+    if (!err.message.includes('duplicate column name')) {
+      console.warn('Warning adding day_of_week column:', err.message);
+    }
+  }
+
+  // Add match_id column to existing regular_tickets table if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE regular_tickets ADD COLUMN match_id INTEGER`);
+  } catch (err) {
+    // Column already exists, ignore error
+    if (!err.message.includes('duplicate column name')) {
+      console.warn('Warning adding match_id column:', err.message);
+    }
+  }
+
+  // Add match_name column to existing regular_tickets table if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE regular_tickets ADD COLUMN match_name TEXT`);
+  } catch (err) {
+    // Column already exists, ignore error
+    if (!err.message.includes('duplicate column name')) {
+      console.warn('Warning adding match_name column:', err.message);
+    }
+  }
+
+  // Add days column to existing regular_tickets table if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE regular_tickets ADD COLUMN days TEXT`);
+  } catch (err) {
+    // Column already exists, ignore error
+    if (!err.message.includes('duplicate column name')) {
+      console.warn('Warning adding days column:', err.message);
+    }
+  }
 
   // Create special_tickets table
   db.exec(`
@@ -151,15 +195,30 @@ export const getBookingById = (id) => {
 // Regular tickets operations
 export const getRegularTickets = (stadiumId) => {
   const stmt = db.prepare('SELECT * FROM regular_tickets WHERE stadium_id = ? ORDER BY created_at ASC');
-  return stmt.all(stadiumId);
+  const tickets = stmt.all(stadiumId);
+  // Parse days JSON string to array
+  return tickets.map(ticket => ({
+    ...ticket,
+    days: ticket.days ? JSON.parse(ticket.days) : null
+  }));
 };
 
 export const createRegularTicket = (stadiumId, ticket) => {
   const stmt = db.prepare(`
-    INSERT INTO regular_tickets (id, stadium_id, name, price, quantity)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO regular_tickets (id, stadium_id, name, price, quantity, day_of_week, match_id, match_name, days)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  stmt.run(ticket.id, stadiumId, ticket.name, ticket.price, ticket.quantity || 0);
+  stmt.run(
+    ticket.id, 
+    stadiumId, 
+    ticket.name, 
+    ticket.price, 
+    ticket.quantity || 0, 
+    ticket.day_of_week !== undefined ? ticket.day_of_week : null,
+    ticket.match_id !== undefined ? ticket.match_id : null,
+    ticket.match_name || null,
+    ticket.days ? JSON.stringify(ticket.days) : null
+  );
   return ticket;
 };
 
@@ -179,6 +238,22 @@ export const updateRegularTicket = (stadiumId, ticketId, updates) => {
     fields.push('quantity = ?');
     values.push(updates.quantity);
   }
+  if (updates.day_of_week !== undefined) {
+    fields.push('day_of_week = ?');
+    values.push(updates.day_of_week !== null ? updates.day_of_week : null);
+  }
+  if (updates.match_id !== undefined) {
+    fields.push('match_id = ?');
+    values.push(updates.match_id !== null ? updates.match_id : null);
+  }
+  if (updates.match_name !== undefined) {
+    fields.push('match_name = ?');
+    values.push(updates.match_name || null);
+  }
+  if (updates.days !== undefined) {
+    fields.push('days = ?');
+    values.push(updates.days ? JSON.stringify(updates.days) : null);
+  }
   
   fields.push('updated_at = CURRENT_TIMESTAMP');
   values.push(stadiumId, ticketId);
@@ -192,7 +267,11 @@ export const updateRegularTicket = (stadiumId, ticketId, updates) => {
   stmt.run(...values);
   
   const getStmt = db.prepare('SELECT * FROM regular_tickets WHERE stadium_id = ? AND id = ?');
-  return getStmt.get(stadiumId, ticketId);
+  const ticket = getStmt.get(stadiumId, ticketId);
+  if (ticket && ticket.days) {
+    ticket.days = JSON.parse(ticket.days);
+  }
+  return ticket;
 };
 
 export const deleteRegularTicket = (stadiumId, ticketId) => {

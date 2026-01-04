@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { initDb, getHighlights, getStadiums, getWeeklyFights, getHeroImage, getStadiumImageSchedules, getSpecialMatches } from '../db/imagesDb';
+import { initDb, getHighlights, getStadiums, getWeeklyFights, getHeroImage, getStadiumImageSchedules, getSpecialMatches, getUpcomingFightsBackground } from '../db/imagesDb';
 import { parseDate } from '../utils/dateHelpers';
 
 export const useDatabase = (language) => {
@@ -22,6 +22,10 @@ export const useDatabase = (language) => {
     patong: []
   });
   const [specialMatches, setSpecialMatches] = useState([]);
+  const [upcomingFightsBackground, setUpcomingFightsBackground] = useState({
+    image: '/images/upcoming-fights-bg.jpg',
+    fallback: '/images/highlights/World class fighters.jpg'
+  });
   const [dbLoaded, setDbLoaded] = useState(false);
 
   // Initialize database and load data
@@ -35,6 +39,7 @@ export const useDatabase = (language) => {
         const weeklyFightsData = await getWeeklyFights();
         const schedulesData = await getStadiumImageSchedules();
         const specialMatchesData = await getSpecialMatches();
+        const backgroundData = await getUpcomingFightsBackground();
         
         setHeroImage(heroData);
         setHighlights(highlightsData);
@@ -42,6 +47,7 @@ export const useDatabase = (language) => {
         setWeeklyFights(weeklyFightsData);
         setStadiumImageSchedules(schedulesData);
         setSpecialMatches(specialMatchesData);
+        setUpcomingFightsBackground(backgroundData);
         setDbLoaded(true);
       } catch (error) {
         console.error('Error loading database:', error);
@@ -79,6 +85,7 @@ export const useDatabase = (language) => {
     weeklyFights,
     stadiumImageSchedules,
     specialMatches,
+    upcomingFightsBackground,
     dbLoaded
   };
 };

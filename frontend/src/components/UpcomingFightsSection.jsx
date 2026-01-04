@@ -8,6 +8,7 @@ const UpcomingFightsSection = ({
   ticketConfigs = {}, 
   stadiumImageSchedules = {}, 
   specialMatches = [],
+  upcomingFightsBackground = { image: '/images/upcoming-fights-bg.jpg', fallback: '/images/highlights/World class fighters.jpg' },
   setSelectedStadium,
   setSelectedDate,
   setBookingStep,
@@ -43,7 +44,30 @@ const UpcomingFightsSection = ({
   };
 
   // Get event name based on stadium and day of week
-  const getEventName = (stadiumId, dayOfWeek) => {
+  const getEventName = (stadiumId, dayOfWeek, dateStr = null) => {
+    // First, check for special matches (exact date match)
+    if (specialMatches && specialMatches.length > 0 && dateStr) {
+      const specialMatch = specialMatches.find(match => 
+        match.stadiumId === stadiumId && match.date === dateStr
+      );
+      if (specialMatch && specialMatch.name) {
+        return specialMatch.name;
+      }
+    }
+
+    // Second, check for scheduled images with names (day of week match)
+    const schedules = stadiumImageSchedules[stadiumId] || [];
+    if (schedules.length > 0) {
+      const matchingSchedules = schedules.filter(schedule => 
+        schedule.days && schedule.days.includes(dayOfWeek) && schedule.name
+      );
+      if (matchingSchedules.length > 0) {
+        // Use the first matching schedule with a name
+        return matchingSchedules[0].name;
+      }
+    }
+
+    // Fallback to default names
     if (stadiumId === 'rajadamnern') {
       const rajadamnernNames = {
         1: 'Rajadamnern Knockout', // Monday
@@ -109,6 +133,70 @@ const UpcomingFightsSection = ({
     return defaultStadiumImages[index % defaultStadiumImages.length];
   };
 
+  // Check if date has available tickets
+  const hasAvailableTickets = (dateString, stadiumId) => {
+    // Parse date string (YYYY-MM-DD) directly to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day, 12, 0, 0); // Use noon to avoid timezone issues
+    const dayOfWeek = date.getDay();
+    
+    // Get ticket config for this stadium
+    const ticketConfig = ticketConfigs[stadiumId];
+    
+    // If ticket config doesn't exist yet (not loaded), assume tickets are available
+    // This prevents showing SOLD OUT before data is loaded
+    if (!ticketConfig) {
+      return true;
+    }
+    
+    // If ticket config exists but is empty, check if it's explicitly empty or just not loaded
+    // If regularTickets and specialTickets are both empty arrays, it means no tickets configured
+    const hasNoTickets = (!ticketConfig.regularTickets || ticketConfig.regularTickets.length === 0) &&
+                         (!ticketConfig.specialTickets || ticketConfig.specialTickets.length === 0);
+    
+    if (hasNoTickets) {
+      return false; // No tickets configured = sold out
+    }
+    
+    // Check regular tickets - must have days that include this day of week and quantity > 0
+    const hasRegularTickets = ticketConfig.regularTickets && ticketConfig.regularTickets.length > 0
+      && ticketConfig.regularTickets.some(ticket => {
+        // Parse days if it's a string (JSON)
+        let ticketDays = ticket.days;
+        if (typeof ticketDays === 'string') {
+          try {
+            ticketDays = ticketDays ? JSON.parse(ticketDays) : null;
+          } catch (e) {
+            ticketDays = null;
+          }
+        }
+        
+        // If days is null or undefined, skip this ticket (it doesn't have days configured)
+        if (!ticketDays || !Array.isArray(ticketDays) || ticketDays.length === 0) {
+          return false;
+        }
+        
+        // Check if ticket has days array and it includes the selected day
+        const hasMatchingDay = ticketDays.includes(dayOfWeek);
+        const hasQuantity = (ticket.quantity || 0) > 0;
+        
+        return hasMatchingDay && hasQuantity;
+      });
+    
+    // Check special tickets for this date - at least one must have quantity > 0
+    const specialTicketsForDate = ticketConfig.specialTickets && ticketConfig.specialTickets.filter(ticket => {
+      const ticketDate = new Date(ticket.date);
+      ticketDate.setHours(0, 0, 0, 0);
+      return ticketDate.getTime() === date.getTime();
+    }) || [];
+    
+    const hasSpecialTickets = specialTicketsForDate.length > 0
+      && specialTicketsForDate.some(ticket => (ticket.quantity || 0) > 0);
+    
+    // Return true if either regular or special tickets are available
+    return hasRegularTickets || hasSpecialTickets;
+  };
+
   const getStadiumEvents = (stadiumId) => {
     const events = [];
     
@@ -141,7 +229,8 @@ const UpcomingFightsSection = ({
         const day = String(checkDate.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${day}`;
         
-        const eventName = getEventName(stadiumId, dayOfWeek);
+        const eventName = getEventName(stadiumId, dayOfWeek, dateStr);
+        const isSoldOut = !hasAvailableTickets(dateStr, stadiumId);
         
         events.push({
           id: `${stadiumId}-${dateStr}`,
@@ -150,7 +239,8 @@ const UpcomingFightsSection = ({
           image: getEventImage(stadiumId, dateStr, dayOfWeek, upcomingDates.length),
           price: null,
           priceRange: null,
-          stadiumId: stadiumId
+          stadiumId: stadiumId,
+          isSoldOut: isSoldOut
         });
         
         upcomingDates.push({ date: checkDate, dayOfWeek: dayOfWeek });
@@ -224,11 +314,18 @@ const UpcomingFightsSection = ({
     const eventName = event.name || `${stadiumName} Event`;
     // Format: "4 JANUARY 2026 - RAJADAMNERN KNOCKOUT"
     const fullEventName = `${formatDate(event.date)} - ${eventName.toUpperCase()}${event.time ? ` (${event.time})` : ''}`;
+    const isSoldOut = event.isSoldOut || false;
     
     return (
-      <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-700 hover:border-yellow-500 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/20">
+      <div className={`bg-gray-900 rounded-lg overflow-hidden border transition-all duration-300 ${
+        isSoldOut 
+          ? 'border-gray-600 opacity-75' 
+          : 'border-gray-700 hover:border-yellow-500 hover:shadow-lg hover:shadow-yellow-500/20'
+      }`}>
         {/* Image */}
-        <div className="relative h-80 sm:h-96 md:h-[400px] lg:h-[450px] overflow-hidden bg-gray-800">
+        <div className={`relative h-80 sm:h-96 md:h-[400px] lg:h-[450px] overflow-hidden bg-gray-800 ${
+          isSoldOut ? 'grayscale' : ''
+        }`}>
           <img
             src={event.image || `/images/stadiums/${event.stadiumId || 'default'}.jpg`}
             alt={eventName}
@@ -241,24 +338,40 @@ const UpcomingFightsSection = ({
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+          {isSoldOut && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+              <div className="bg-red-600 text-white font-black text-lg sm:text-xl md:text-2xl px-6 py-3 rounded-lg uppercase tracking-wider">
+                {language === 'th' ? 'หมดแล้ว' : 'SOLD OUT'}
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Content */}
         <div className="p-4 sm:p-5 bg-gray-900">
-          <div className="text-gray-400 text-xs sm:text-sm mb-2 uppercase tracking-wide">
+          <div className={`text-xs sm:text-sm mb-2 uppercase tracking-wide ${
+            isSoldOut ? 'text-gray-500' : 'text-gray-400'
+          }`}>
             {stadiumName}
           </div>
-          <div className="text-white text-sm sm:text-base mb-3 line-clamp-2 min-h-[2.5rem]">
+          <div className={`text-sm sm:text-base mb-3 line-clamp-2 min-h-[2.5rem] ${
+            isSoldOut ? 'text-gray-500' : 'text-white'
+          }`}>
             {fullEventName}
           </div>
-          {(event.price || event.priceRange) && (
+          {(event.price || event.priceRange) && !isSoldOut && (
             <div className="text-yellow-400 text-sm sm:text-base font-semibold mb-4">
               {formatPrice(event.price, event.priceRange)}
             </div>
           )}
+          {isSoldOut && (
+            <div className="text-red-400 text-sm sm:text-base font-semibold mb-4 uppercase">
+              {language === 'th' ? 'หมดแล้ว' : 'SOLD OUT'}
+            </div>
+          )}
           <button
             onClick={() => {
-              if (setSelectedStadium && setSelectedDate && setBookingStep && setBookingCalendarMonth) {
+              if (!isSoldOut && setSelectedStadium && setSelectedDate && setBookingStep && setBookingCalendarMonth) {
                 // Set selected stadium
                 setSelectedStadium(event.stadiumId);
                 
@@ -279,14 +392,22 @@ const UpcomingFightsSection = ({
                 setTimeout(() => {
                   document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
                 }, 100);
-              } else {
+              } else if (!isSoldOut) {
                 // Fallback if functions not provided
                 document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
               }
             }}
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2.5 px-4 rounded-lg transition-colors duration-200 text-sm sm:text-base uppercase tracking-wide"
+            disabled={isSoldOut}
+            className={`w-full font-bold py-2.5 px-4 rounded-lg transition-colors duration-200 text-sm sm:text-base uppercase tracking-wide ${
+              isSoldOut
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                : 'bg-yellow-500 hover:bg-yellow-600 text-black'
+            }`}
           >
-            {language === 'th' ? 'ซื้อตั๋ว' : 'GET TICKETS'}
+            {isSoldOut 
+              ? (language === 'th' ? 'หมดแล้ว' : 'SOLD OUT')
+              : (language === 'th' ? 'ซื้อตั๋ว' : 'GET TICKETS')
+            }
           </button>
         </div>
       </div>
@@ -298,11 +419,16 @@ const UpcomingFightsSection = ({
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <img
-          src="/images/upcoming-fights-bg.jpg"
+          src={upcomingFightsBackground?.image || '/images/upcoming-fights-bg.jpg'}
           alt="Upcoming Fights Background"
           className="w-full h-full object-cover"
           onError={(e) => {
-            e.target.style.display = 'none';
+            // Fallback to fallback image if main image doesn't exist
+            if (e.target.src !== upcomingFightsBackground?.fallback) {
+              e.target.src = upcomingFightsBackground?.fallback || '/images/highlights/World class fighters.jpg';
+            } else {
+              e.target.style.display = 'none';
+            }
           }}
         />
         <div className="absolute inset-0 bg-black/60"></div>
