@@ -23,8 +23,20 @@ const PORT = process.env.PORT || 5000;
 // Initialize database
 initDatabase();
 
+// CORS configuration
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'https://dsmuaythaiticket.com',
+    'www.dsmuaythaiticket.com',
+    'http://www.dsmuaythaiticket.com'
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 let tickets = [
   { id: 'rajadamnern', name: 'Rajadamnern Stadium', location: 'Bangkok' },
@@ -255,9 +267,9 @@ app.get('/api/stadiums/:stadiumId/tickets', (req, res) => {
 // Add regular ticket to a stadium
 app.post('/api/stadiums/:stadiumId/tickets/regular', (req, res) => {
   const { stadiumId } = req.params;
-  const { name, price, quantity, day_of_week, match_id, match_name, days } = req.body;
+  const { name, price, quantity } = req.body;
   
-  console.log(`Adding regular ticket to ${stadiumId}:`, { name, price, quantity, day_of_week, match_id, match_name, days });
+  console.log(`Adding regular ticket to ${stadiumId}:`, { name, price, quantity });
   
   // Validate stadium exists
   const stadiumExists = tickets.find(t => t.id === stadiumId);
@@ -271,38 +283,12 @@ app.post('/api/stadiums/:stadiumId/tickets/regular', (req, res) => {
     return res.status(400).json({ error: 'Name and price are required' });
   }
   
-  // Validate day_of_week if provided (0-6, where 0 = Sunday, 1 = Monday, etc.)
-  if (day_of_week !== undefined && day_of_week !== null) {
-    const day = parseInt(day_of_week);
-    if (isNaN(day) || day < 0 || day > 6) {
-      return res.status(400).json({ error: 'day_of_week must be between 0 (Sunday) and 6 (Saturday)' });
-    }
-  }
-  
-  // Validate days array if provided
-  let daysArray = null;
-  if (days !== undefined && days !== null) {
-    if (Array.isArray(days)) {
-      daysArray = days.filter(d => d >= 0 && d <= 6).map(d => parseInt(d));
-    } else if (typeof days === 'string') {
-      try {
-        daysArray = JSON.parse(days).filter(d => d >= 0 && d <= 6).map(d => parseInt(d));
-      } catch (e) {
-        return res.status(400).json({ error: 'Invalid days format' });
-      }
-    }
-  }
-  
   try {
     const ticket = {
       id: uuidv4(),
       name,
       price: parseFloat(price),
-      quantity: parseInt(quantity) || 0,
-      day_of_week: day_of_week !== undefined && day_of_week !== null ? parseInt(day_of_week) : null,
-      match_id: match_id !== undefined && match_id !== null ? parseInt(match_id) : null,
-      match_name: match_name || null,
-      days: daysArray
+      quantity: parseInt(quantity) || 0
     };
     
     createRegularTicket(stadiumId, ticket);
@@ -317,7 +303,7 @@ app.post('/api/stadiums/:stadiumId/tickets/regular', (req, res) => {
 // Update regular ticket
 app.put('/api/stadiums/:stadiumId/tickets/regular/:ticketId', (req, res) => {
   const { stadiumId, ticketId } = req.params;
-  const { name, price, quantity, day_of_week, match_id, match_name, days } = req.body;
+  const { name, price, quantity } = req.body;
   
   // Validate stadium exists
   const stadiumExists = tickets.find(t => t.id === stadiumId);
@@ -325,39 +311,11 @@ app.put('/api/stadiums/:stadiumId/tickets/regular/:ticketId', (req, res) => {
     return res.status(404).json({ error: 'Stadium not found' });
   }
   
-  // Validate day_of_week if provided
-  if (day_of_week !== undefined && day_of_week !== null) {
-    const day = parseInt(day_of_week);
-    if (isNaN(day) || day < 0 || day > 6) {
-      return res.status(400).json({ error: 'day_of_week must be between 0 (Sunday) and 6 (Saturday)' });
-    }
-  }
-  
-  // Validate days array if provided
-  let daysArray = undefined;
-  if (days !== undefined) {
-    if (days === null) {
-      daysArray = null;
-    } else if (Array.isArray(days)) {
-      daysArray = days.filter(d => d >= 0 && d <= 6).map(d => parseInt(d));
-    } else if (typeof days === 'string') {
-      try {
-        daysArray = JSON.parse(days).filter(d => d >= 0 && d <= 6).map(d => parseInt(d));
-      } catch (e) {
-        return res.status(400).json({ error: 'Invalid days format' });
-      }
-    }
-  }
-  
   try {
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (price !== undefined) updates.price = parseFloat(price);
     if (quantity !== undefined) updates.quantity = parseInt(quantity);
-    if (day_of_week !== undefined) updates.day_of_week = day_of_week !== null ? parseInt(day_of_week) : null;
-    if (match_id !== undefined) updates.match_id = match_id !== null ? parseInt(match_id) : null;
-    if (match_name !== undefined) updates.match_name = match_name || null;
-    if (days !== undefined) updates.days = daysArray;
     
     const ticket = updateRegularTicket(stadiumId, ticketId, updates);
     if (!ticket) {
