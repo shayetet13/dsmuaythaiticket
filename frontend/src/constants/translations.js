@@ -115,7 +115,7 @@ export const translations = {
       home: 'หน้าแรก',
       highlight: 'ไฮไลท์',
       tickets: 'ตั๋ว',
-      news: 'ข่าวสาร',
+      news: 'ข่าวสาร55',
       about: 'เกี่ยวกับเรา',
       faq: 'คำถามที่พบบ่อย',
       contact: 'ติดต่อเรา'
