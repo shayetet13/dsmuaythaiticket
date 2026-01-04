@@ -112,10 +112,10 @@ export const translations = {
   },
   th: {
     nav: {
-      home: 'หน้าแรก',
+      home: 'หน้าแรก555',
       highlight: 'ไฮไลท์',
       tickets: 'ตั๋ว',
-      news: 'ข่าวสาร55',
+      news: 'ข่าวสาร',
       about: 'เกี่ยวกับเรา',
       faq: 'คำถามที่พบบ่อย',
       contact: 'ติดต่อเรา'
