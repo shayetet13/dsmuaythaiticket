@@ -98,7 +98,10 @@ class EmailService {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Booking Confirmation</title>
+  <title>Booking Confirmation - DS Muay Thai</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -107,239 +110,637 @@ class EmailService {
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f8fafc;
-      color: #1e293b;
+      font-family: 'Sarabun', sans-serif;
+      background: #0a0a0a;
+      color: #ffffff;
       line-height: 1.6;
-      padding: 24px;
+      padding: 24px 16px;
       min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    /* Ring Ropes Background */
+    body::before,
+    body::after {
+      content: '';
+      position: fixed;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        #dc2626 20%, 
+        #dc2626 80%, 
+        transparent 100%);
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.6);
+      z-index: 0;
+    }
+    
+    body::before {
+      top: 60px;
+    }
+    
+    body::after {
+      bottom: 60px;
+    }
+    
+    .rope-decoration {
+      position: fixed;
+      width: 3px;
+      height: 100%;
+      top: 0;
+      background: linear-gradient(180deg, 
+        transparent 0%, 
+        #dc2626 10%, 
+        #dc2626 90%, 
+        transparent 100%);
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
+      z-index: 0;
+    }
+    
+    .rope-decoration.left {
+      left: 40px;
+    }
+    
+    .rope-decoration.right {
+      right: 40px;
     }
     
     .container {
-      max-width: 600px;
+      max-width: 700px;
       margin: 0 auto;
-      background: white;
-      border-radius: 20px;
+      background: 
+        linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(30, 20, 20, 0.98) 100%);
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.8),
+        0 0 0 3px #dc2626,
+        0 0 0 6px #1a1a1a,
+        0 0 30px rgba(220, 38, 38, 0.4);
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Corner Posts */
+    .corner-post {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: 
+        radial-gradient(circle, #dc2626 0%, #991b1b 100%);
+      border: 3px solid #1a1a1a;
+      border-radius: 50%;
+      box-shadow: 
+        0 0 20px rgba(220, 38, 38, 0.6),
+        inset 0 2px 4px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+    }
+    
+    .corner-post.top-left {
+      top: -10px;
+      left: -10px;
+    }
+    
+    .corner-post.top-right {
+      top: -10px;
+      right: -10px;
+    }
+    
+    .corner-post.bottom-left {
+      bottom: -10px;
+      left: -10px;
+    }
+    
+    .corner-post.bottom-right {
+      bottom: -10px;
+      right: -10px;
     }
     
     .header {
-      background: #3b82f6;
+      background: 
+        linear-gradient(180deg, rgba(220, 38, 38, 0.1) 0%, transparent 100%),
+        linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
       color: white;
-      padding: 32px 24px;
+      padding: 48px 32px 40px;
       text-align: center;
+      position: relative;
+      border-bottom: 4px solid #dc2626;
+      overflow: hidden;
+    }
+    
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(220, 38, 38, 0.03) 2px,
+          rgba(220, 38, 38, 0.03) 4px
+        );
+      pointer-events: none;
+    }
+    
+    .header::after {
+      content: '🥊';
+      position: absolute;
+      font-size: 200px;
+      opacity: 0.03;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-15deg);
+      pointer-events: none;
+    }
+    
+    .logo {
+      font-size: 64px;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 4px 12px rgba(220, 38, 38, 0.6));
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
     }
     
     .header h1 {
-      font-size: 24px;
-      font-weight: 600;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      font-weight: 400;
       margin: 0;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #ffffff;
+      text-shadow: 
+        0 0 20px rgba(220, 38, 38, 0.8),
+        0 4px 8px rgba(0, 0, 0, 0.8);
+      position: relative;
     }
     
     .header p {
       margin-top: 8px;
-      opacity: 0.9;
       font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #dc2626;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+    
+    .fight-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      padding: 10px 28px;
+      border-radius: 4px;
+      margin-top: 20px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      box-shadow: 
+        0 4px 12px rgba(220, 38, 38, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .fight-badge::before {
+      content: '✓';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: bold;
     }
     
     .content {
-      padding: 32px 24px;
+      padding: 40px 32px;
+      position: relative;
     }
     
     .section {
-      margin-bottom: 28px;
+      margin-bottom: 32px;
+      background: rgba(220, 38, 38, 0.05);
+      border: 2px solid rgba(220, 38, 38, 0.2);
+      border-radius: 4px;
+      padding: 28px;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    
+    .section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+    }
+    
+    .section:hover {
+      background: rgba(220, 38, 38, 0.08);
+      border-color: rgba(220, 38, 38, 0.4);
+      transform: translateX(4px);
     }
     
     .section-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: #0f172a;
-      margin-bottom: 20px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      font-weight: 400;
+      color: #dc2626;
+      margin-bottom: 24px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(90deg, 
+        rgba(220, 38, 38, 0.5) 0%, 
+        transparent 100%);
     }
     
     .info-item {
       display: flex;
       justify-content: space-between;
-      padding: 12px 0;
-      border-bottom: 1px solid #f1f5f9;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(220, 38, 38, 0.15);
+      gap: 16px;
     }
     
     .info-item:last-child {
       border-bottom: none;
+      padding-bottom: 0;
+    }
+    
+    .info-item:first-child {
+      padding-top: 0;
     }
     
     .info-label {
-      font-weight: 500;
-      color: #64748b;
+      font-weight: 600;
+      color: #999;
+      font-size: 15px;
       flex: 0 0 140px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .info-value {
-      font-weight: 500;
-      color: #0f172a;
+      font-weight: 700;
+      color: #ffffff;
+      font-size: 16px;
       flex: 1;
       text-align: right;
     }
     
     .price-section {
-      background: #f0f9ff;
-      border: 1px solid #bae6fd;
-      border-radius: 16px;
-      padding: 24px;
+      background: 
+        linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(153, 27, 27, 0.2) 100%),
+        #1a1a1a;
+      border: 3px solid #dc2626;
+      border-radius: 4px;
+      padding: 40px 28px;
       text-align: center;
-      margin: 28px 0;
+      margin: 36px 0;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 
+        0 8px 24px rgba(220, 38, 38, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .price-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(220, 38, 38, 0.3) 50%, 
+        transparent 100%);
+      animation: priceShimmer 3s infinite;
+    }
+    
+    @keyframes priceShimmer {
+      0% { left: -100%; }
+      100% { left: 200%; }
     }
     
     .price-label {
-      font-size: 14px;
-      color: #0369a1;
-      font-weight: 600;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      color: #ffffff;
+      font-weight: 400;
       margin-bottom: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
     }
     
     .price-value {
-      font-size: 32px;
-      font-weight: 700;
-      color: #0284c7;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 64px;
+      font-weight: 400;
+      color: #dc2626;
+      letter-spacing: 2px;
+      position: relative;
+      text-shadow: 
+        0 0 30px rgba(220, 38, 38, 0.8),
+        0 4px 8px rgba(0, 0, 0, 0.8);
+      filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.6));
     }
     
     .reference-section {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
-      margin: 24px 0;
+      margin: 32px 0;
     }
     
     .reference-item {
-      flex: 1;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      padding: 20px;
+      background: 
+        linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+      border: 2px solid rgba(220, 38, 38, 0.3);
+      border-radius: 4px;
+      padding: 24px 20px;
       text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .reference-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, 
+        #dc2626 0%, 
+        #991b1b 50%, 
+        #dc2626 100%);
+    }
+    
+    .reference-item:hover {
+      background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+      border-color: #dc2626;
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(220, 38, 38, 0.3);
     }
     
     .reference-label {
-      font-size: 12px;
-      color: #64748b;
-      font-weight: 600;
-      margin-bottom: 8px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      color: #dc2626;
+      font-weight: 400;
+      margin-bottom: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 2px;
     }
     
     .reference-value {
-      font-size: 18px;
+      font-size: 22px;
       font-weight: 700;
-      color: #0f172a;
-      font-family: monospace;
+      color: #ffffff;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 2px;
     }
     
     .alert {
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      border-radius: 16px;
-      padding: 20px;
-      color: #92400e;
+      background: 
+        linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(202, 138, 4, 0.1) 100%);
+      border: 2px solid rgba(234, 179, 8, 0.4);
+      border-left: 6px solid #eab308;
+      border-radius: 4px;
+      padding: 24px;
+      color: #ffffff;
       font-weight: 600;
-      margin-top: 28px;
+      margin-top: 32px;
       display: flex;
-      gap: 12px;
+      gap: 16px;
+      align-items: start;
     }
     
     .alert-icon {
-      font-size: 20px;
+      font-size: 28px;
       flex-shrink: 0;
+      filter: drop-shadow(0 2px 8px rgba(234, 179, 8, 0.6));
     }
     
     .success-button {
-      display: inline-block;
-      background: #3b82f6;
-      color: white;
-      padding: 16px 32px;
-      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      color: #ffffff;
+      padding: 18px 40px;
+      border-radius: 4px;
       text-decoration: none;
-      font-weight: 600;
-      font-size: 16px;
-      margin: 24px 0;
+      font-family: 'Bebas Neue', sans-serif;
+      font-weight: 400;
+      font-size: 20px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin: 32px 0 8px;
       text-align: center;
-      transition: background 0.3s;
+      transition: all 0.3s ease;
+      box-shadow: 
+        0 8px 20px rgba(220, 38, 38, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .success-button::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s ease, height 0.6s ease;
+    }
+    
+    .success-button:hover::before {
+      width: 400px;
+      height: 400px;
     }
     
     .success-button:hover {
-      background: #2563eb;
+      transform: translateY(-3px);
+      box-shadow: 
+        0 12px 28px rgba(220, 38, 38, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    
+    .success-button:active {
+      transform: translateY(0);
+    }
+    
+    .success-button span {
+      position: relative;
+      z-index: 1;
     }
     
     .footer {
-      background: #f8fafc;
-      padding: 24px;
+      background: 
+        linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
+      padding: 32px 24px;
       text-align: center;
-      color: #64748b;
+      color: #666;
       font-size: 14px;
-      border-top: 1px solid #e2e8f0;
+      border-top: 4px solid #dc2626;
     }
     
     .footer p {
-      margin: 4px 0;
+      margin: 6px 0;
       font-weight: 600;
     }
     
+    .footer p:first-child {
+      font-family: 'Bebas Neue', sans-serif;
+      color: #dc2626;
+      font-size: 24px;
+      font-weight: 400;
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    
+    .divider {
+      height: 2px;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        #dc2626 50%, 
+        transparent 100%);
+      margin: 36px 0;
+      box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+    }
+    
     @media (max-width: 600px) {
+      body::before,
+      body::after {
+        display: none;
+      }
+      
+      .rope-decoration {
+        display: none;
+      }
+      
+      body {
+        padding: 16px 12px;
+      }
+      
       .container {
-        border-radius: 16px;
+        border-radius: 4px;
       }
       
       .header {
-        padding: 24px 16px;
+        padding: 36px 24px 32px;
+      }
+      
+      .header h1 {
+        font-size: 36px;
+        letter-spacing: 2px;
+      }
+      
+      .logo {
+        font-size: 48px;
       }
       
       .content {
-        padding: 24px 16px;
+        padding: 28px 20px;
+      }
+      
+      .section {
+        padding: 20px;
+      }
+      
+      .section-title {
+        font-size: 20px;
       }
       
       .info-label {
-        flex: 0 0 120px;
-        font-size: 15px;
+        flex: 0 0 100px;
+        font-size: 13px;
       }
       
       .info-value {
-        font-size: 15px;
+        font-size: 14px;
       }
       
       .price-value {
-        font-size: 28px;
+        font-size: 48px;
       }
       
       .reference-section {
-        flex-direction: column;
+        grid-template-columns: 1fr;
         gap: 12px;
       }
       
       .success-button {
-        padding: 14px 24px;
-        font-size: 14px;
+        padding: 16px 32px;
+        font-size: 18px;
         width: 100%;
-        display: block;
       }
     }
   </style>
 </head>
 <body>
+  <div class="rope-decoration left"></div>
+  <div class="rope-decoration right"></div>
+  
   <div class="container">
+    <!-- Corner Posts -->
+    <div class="corner-post top-left"></div>
+    <div class="corner-post top-right"></div>
+    <div class="corner-post bottom-left"></div>
+    <div class="corner-post bottom-right"></div>
+    
     <!-- Header -->
     <div class="header">
-      <h1>Booking Confirmed</h1>
-      <p>DS Muay Thai Tickets</p>
+      <div class="logo">🥊</div>
+      <h1>Confirmed</h1>
+      <p>DS Muay Thai Stadium</p>
+      <div class="fight-badge">Booking Verified</div>
     </div>
 
     <!-- Content -->
     <div class="content">
       <!-- Booking Summary -->
       <div class="section">
-        <div class="section-title">📋 Booking Details</div>
+        <div class="section-title">🏟️ Fight Event</div>
         <div class="info-item">
           <span class="info-label">Stadium</span>
           <span class="info-value">${stadiumName || 'N/A'}</span>
@@ -349,40 +750,42 @@ class EmailService {
           <span class="info-value">${date || 'N/A'}</span>
         </div>
         <div class="info-item">
-          <span class="info-label">Ticket Type</span>
+          <span class="info-label">Seat Zone</span>
           <span class="info-value">${ticketName || zoneName || 'N/A'}</span>
         </div>
         <div class="info-item">
-          <span class="info-label">Quantity</span>
+          <span class="info-label">Tickets</span>
           <span class="info-value">${quantity || 1} ticket${quantity > 1 ? 's' : ''}</span>
         </div>
       </div>
 
       <!-- Total Price -->
       <div class="price-section">
-        <div class="price-label">Total Amount Paid</div>
+        <div class="price-label">Total Paid</div>
         <div class="price-value">฿${typeof totalPrice === 'number' ? totalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : totalPrice || '0.00'}</div>
       </div>
 
       <!-- Reference Numbers -->
       <div class="reference-section">
         <div class="reference-item">
-          <div class="reference-label">Booking Reference</div>
+          <div class="reference-label">Booking Ref</div>
           <div class="reference-value">${referenceNo || 'N/A'}</div>
         </div>
         ${orderNo ? `
         <div class="reference-item">
-          <div class="reference-label">Order Number</div>
+          <div class="reference-label">Order No</div>
           <div class="reference-value">${orderNo}</div>
         </div>
         ` : ''}
       </div>
 
+      <div class="divider"></div>
+
       <!-- Customer Information -->
       <div class="section">
-        <div class="section-title">👤 Customer Information</div>
+        <div class="section-title">👤 Fighter Info</div>
         <div class="info-item">
-          <span class="info-label">Full Name</span>
+          <span class="info-label">Name</span>
           <span class="info-value">${customerName || 'N/A'}</span>
         </div>
         <div class="info-item">
@@ -403,13 +806,16 @@ class EmailService {
 
       <!-- Success Page Link -->
       <div style="text-align: center;">
-        <a href="${successPageUrl}" class="success-button">View Customer Booking Details</a>
+        <a href="${successPageUrl}" class="success-button">
+          <span>View Details</span>
+          <span>→</span>
+        </a>
       </div>
     </div>
 
     <!-- Footer -->
     <div class="footer">
-      <p>DS Muay Thai Tickets</p>
+      <p>DS Muay Thai</p>
       <p>Powered By Devkao & Max</p>
     </div>
   </div>
