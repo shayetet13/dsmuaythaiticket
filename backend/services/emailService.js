@@ -17,21 +17,31 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
 
 class EmailService {
   constructor() {
+    // Initialize config validity flag
+    this.isConfigValid = false;
+    
     // Validate email configuration before creating transporter
-    this.validateConfig();
+    const isValid = this.validateConfig();
     
-    // Create reusable transporter
-    this.transporter = nodemailer.createTransport(EMAIL_CONFIG);
-    
-    // Log configuration (without password)
-    console.log('[EmailService] Initialized with config:', {
-      host: EMAIL_CONFIG.host,
-      port: EMAIL_CONFIG.port,
-      secure: EMAIL_CONFIG.secure,
-      user: EMAIL_CONFIG.auth.user,
-      adminEmail: ADMIN_EMAIL,
-      hasPassword: !!EMAIL_CONFIG.auth.pass
-    });
+    // Only create transporter if config is valid
+    if (isValid) {
+      // Create reusable transporter
+      this.transporter = nodemailer.createTransport(EMAIL_CONFIG);
+      
+      // Log configuration (without password)
+      console.log('[EmailService] Initialized with config:', {
+        host: EMAIL_CONFIG.host,
+        port: EMAIL_CONFIG.port,
+        secure: EMAIL_CONFIG.secure,
+        user: EMAIL_CONFIG.auth.user,
+        adminEmail: ADMIN_EMAIL,
+        hasPassword: !!EMAIL_CONFIG.auth.pass
+      });
+    } else {
+      // Create a dummy transporter to prevent errors, but it won't work
+      this.transporter = null;
+      console.warn('[EmailService] ⚠️ Email service initialized but not configured. Emails will not be sent.');
+    }
   }
 
   /**
@@ -40,34 +50,61 @@ class EmailService {
   validateConfig() {
     const errors = [];
     
-    if (!EMAIL_CONFIG.host) {
-      errors.push('EMAIL_HOST is not set');
+    // Check if host is set and not empty
+    if (!EMAIL_CONFIG.host || typeof EMAIL_CONFIG.host !== 'string' || EMAIL_CONFIG.host.trim() === '') {
+      errors.push('EMAIL_HOST is not set or is empty');
     }
     
-    if (!EMAIL_CONFIG.port) {
-      errors.push('EMAIL_PORT is not set');
+    // Check if port is set and valid
+    if (!EMAIL_CONFIG.port || isNaN(EMAIL_CONFIG.port) || EMAIL_CONFIG.port <= 0) {
+      errors.push('EMAIL_PORT is not set or is invalid');
     }
     
-    if (!EMAIL_CONFIG.auth.user) {
-      errors.push('EMAIL_USER is not set');
+    // Check if user is set and not empty (trim whitespace)
+    if (!EMAIL_CONFIG.auth.user || typeof EMAIL_CONFIG.auth.user !== 'string' || EMAIL_CONFIG.auth.user.trim() === '') {
+      errors.push('EMAIL_USER is not set or is empty');
     }
     
-    if (!EMAIL_CONFIG.auth.pass) {
-      errors.push('EMAIL_PASSWORD is not set');
+    // Check if password is set and not empty (trim whitespace)
+    if (!EMAIL_CONFIG.auth.pass || typeof EMAIL_CONFIG.auth.pass !== 'string' || EMAIL_CONFIG.auth.pass.trim() === '') {
+      errors.push('EMAIL_PASSWORD is not set or is empty');
     }
     
-    if (!ADMIN_EMAIL) {
-      errors.push('ADMIN_EMAIL is not set');
+    // Check if admin email is set
+    if (!ADMIN_EMAIL || typeof ADMIN_EMAIL !== 'string' || ADMIN_EMAIL.trim() === '') {
+      errors.push('ADMIN_EMAIL is not set or is empty');
     }
     
     if (errors.length > 0) {
       console.error('[EmailService] ❌ Email configuration errors:');
       errors.forEach(error => console.error(`  - ${error}`));
       console.error('[EmailService] Please check your .env file and set the required email variables');
-      throw new Error(`Email configuration incomplete: ${errors.join(', ')}`);
+      console.error('[EmailService] Current values (masked):');
+      console.error(`  - EMAIL_HOST: ${EMAIL_CONFIG.host || 'NOT SET'}`);
+      console.error(`  - EMAIL_PORT: ${EMAIL_CONFIG.port || 'NOT SET'}`);
+      console.error(`  - EMAIL_USER: ${EMAIL_CONFIG.auth.user ? EMAIL_CONFIG.auth.user.substring(0, 3) + '***' : 'NOT SET'}`);
+      console.error(`  - EMAIL_PASSWORD: ${EMAIL_CONFIG.auth.pass ? '***SET***' : 'NOT SET'}`);
+      console.error(`  - ADMIN_EMAIL: ${ADMIN_EMAIL || 'NOT SET'}`);
+      
+      // Don't throw error, just mark as invalid
+      this.isConfigValid = false;
+      return false;
     }
     
+    // Trim whitespace from credentials
+    EMAIL_CONFIG.auth.user = EMAIL_CONFIG.auth.user.trim();
+    EMAIL_CONFIG.auth.pass = EMAIL_CONFIG.auth.pass.trim();
+    
     console.log('[EmailService] ✅ Email configuration validated');
+    this.isConfigValid = true;
+    return true;
+  }
+  
+  /**
+   * Check if email service is properly configured
+   */
+  isConfigured() {
+    return this.isConfigValid === true;
   }
 
   /**
@@ -1137,10 +1174,22 @@ class EmailService {
    */
   async sendBookingNotification(bookingData) {
     try {
+      // Check if email service is configured
+      if (!this.isConfigured()) {
+        console.error('[EmailService] ❌ Cannot send email: Email configuration is invalid');
+        console.error('[EmailService] Please check your .env file and set EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD, and ADMIN_EMAIL');
+        throw new Error('Email service is not properly configured. Please check environment variables.');
+      }
+      
       console.log('[EmailService] 📤 Sending booking notification to admin...');
       console.log('[EmailService] Recipient:', ADMIN_EMAIL);
       console.log('[EmailService] SMTP Host:', EMAIL_CONFIG.host);
       console.log('[EmailService] SMTP Port:', EMAIL_CONFIG.port);
+
+      // Check if transporter is available
+      if (!this.transporter) {
+        throw new Error('Email transporter is not initialized. Please check email configuration.');
+      }
 
       // Verify connection before sending
       try {
@@ -1148,6 +1197,10 @@ class EmailService {
         console.log('[EmailService] ✅ SMTP connection verified');
       } catch (verifyError) {
         console.error('[EmailService] ❌ SMTP connection failed:', verifyError.message);
+        console.error('[EmailService] Error code:', verifyError.code);
+        if (verifyError.code === 'EAUTH') {
+          throw new Error(`SMTP authentication failed. Please check EMAIL_USER and EMAIL_PASSWORD in .env file. ${verifyError.message}`);
+        }
         throw new Error(`SMTP connection failed: ${verifyError.message}`);
       }
 
@@ -1194,6 +1247,13 @@ class EmailService {
    */
   async sendCustomerConfirmation(bookingData) {
     try {
+      // Check if email service is configured
+      if (!this.isConfigured()) {
+        console.error('[EmailService] ❌ Cannot send email: Email configuration is invalid');
+        console.error('[EmailService] Please check your .env file and set EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD, and ADMIN_EMAIL');
+        throw new Error('Email service is not properly configured. Please check environment variables.');
+      }
+      
       console.log('[EmailService] 📤 Sending confirmation email to customer...');
       console.log('[EmailService] Recipient:', bookingData.customerEmail);
       console.log('[EmailService] Customer data:', {
@@ -1203,9 +1263,14 @@ class EmailService {
       });
 
       // Validate customer email
-      if (!bookingData.customerEmail || bookingData.customerEmail === 'N/A') {
+      if (!bookingData.customerEmail || bookingData.customerEmail === 'N/A' || bookingData.customerEmail.trim() === '') {
         console.error('[EmailService] ❌ Invalid customer email:', bookingData.customerEmail);
         throw new Error('Invalid customer email address');
+      }
+
+      // Check if transporter is available
+      if (!this.transporter) {
+        throw new Error('Email transporter is not initialized. Please check email configuration.');
       }
 
       // Verify connection before sending
@@ -1214,6 +1279,10 @@ class EmailService {
         console.log('[EmailService] ✅ SMTP connection verified');
       } catch (verifyError) {
         console.error('[EmailService] ❌ SMTP connection failed:', verifyError.message);
+        console.error('[EmailService] Error code:', verifyError.code);
+        if (verifyError.code === 'EAUTH') {
+          throw new Error(`SMTP authentication failed. Please check EMAIL_USER and EMAIL_PASSWORD in .env file. ${verifyError.message}`);
+        }
         throw new Error(`SMTP connection failed: ${verifyError.message}`);
       }
 
@@ -1260,11 +1329,20 @@ class EmailService {
    */
   async verifyConnection() {
     try {
+      if (!this.isConfigured() || !this.transporter) {
+        console.error('[EmailService] Email service is not configured');
+        return false;
+      }
+      
       await this.transporter.verify();
       console.log('[EmailService] Email server connection verified ✓');
       return true;
     } catch (error) {
       console.error('[EmailService] Email server connection failed:', error);
+      console.error('[EmailService] Error code:', error.code);
+      if (error.code === 'EAUTH') {
+        console.error('[EmailService] Authentication failed. Please check EMAIL_USER and EMAIL_PASSWORD in .env file');
+      }
       return false;
     }
   }
