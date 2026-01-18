@@ -41,7 +41,7 @@ const UpcomingFightsSection = ({
     ],
     bangla: [
       '/images/highlights/aow4.webp',
-      '/images/highlights/_RMS0100.webp',
+      '/images/highlights/World class fighters.webp'',
       '/images/highlights/_NPX0152-2.webp',
       '/images/highlights/20230930-NPX_3584.webp'
     ],
