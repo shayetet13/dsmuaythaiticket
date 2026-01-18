@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
+import { cacheMiddleware, clearCache } from './utils/cache.js';
 import db, { 
   initDatabase, 
   createBooking, 
@@ -1300,7 +1301,7 @@ app.put('/api/stadiums/:stadiumId/tickets/date/:date/toggle-enabled', (req, res)
 // ==================== Images & Content Management API ====================
 
 // Hero Image
-app.get('/api/images/hero', (req, res) => {
+app.get('/api/images/hero', cacheMiddleware('/api/images/hero', 5 * 60 * 1000), (req, res) => {
   try {
     const hero = getHeroImage();
     res.json(hero);
@@ -1311,6 +1312,8 @@ app.get('/api/images/hero', (req, res) => {
 });
 
 app.put('/api/images/hero', async (req, res) => {
+    // Clear cache when updating hero image
+    clearCache('/api/images/hero');
   try {
     const { image, alt, fallback } = req.body;
     
@@ -1335,7 +1338,7 @@ app.put('/api/images/hero', async (req, res) => {
 });
 
 // Highlights
-app.get('/api/images/highlights', (req, res) => {
+app.get('/api/images/highlights', cacheMiddleware('/api/images/highlights', 5 * 60 * 1000), (req, res) => {
   try {
     const highlights = getHighlights();
     res.json(highlights);
@@ -1346,6 +1349,8 @@ app.get('/api/images/highlights', (req, res) => {
 });
 
 app.post('/api/images/highlights', async (req, res) => {
+    // Clear cache when creating new highlight
+    clearCache('/api/images/highlights');
   try {
     const { image, ...rest } = req.body;
     
@@ -1364,6 +1369,8 @@ app.post('/api/images/highlights', async (req, res) => {
 });
 
 app.put('/api/images/highlights/:id', async (req, res) => {
+    // Clear cache when updating highlight
+    clearCache('/api/images/highlights');
   try {
     const id = parseInt(req.params.id);
     const { image, ...rest } = req.body;
@@ -1383,6 +1390,8 @@ app.put('/api/images/highlights/:id', async (req, res) => {
 });
 
 app.delete('/api/images/highlights/:id', (req, res) => {
+    // Clear cache when deleting highlight
+    clearCache('/api/images/highlights');
   try {
     const id = parseInt(req.params.id);
     deleteHighlight(id);
@@ -1394,7 +1403,7 @@ app.delete('/api/images/highlights/:id', (req, res) => {
 });
 
 // Stadiums (Extended)
-app.get('/api/images/stadiums', (req, res) => {
+app.get('/api/images/stadiums', cacheMiddleware('/api/images/stadiums', 5 * 60 * 1000), (req, res) => {
   try {
     const stadiums = getStadiumsExtended();
     res.json(stadiums);
@@ -1583,7 +1592,7 @@ app.delete('/api/images/stadiums/:id', (req, res) => {
 });
 
 // Stadium Image Schedules
-app.get('/api/images/stadium-schedules', (req, res) => {
+app.get('/api/images/stadium-schedules', cacheMiddleware('/api/images/stadium-schedules', 5 * 60 * 1000), (req, res) => {
   try {
     const schedules = getStadiumImageSchedules();
     res.json(schedules);
@@ -1618,7 +1627,7 @@ app.put('/api/images/stadium-schedules/:stadiumId', async (req, res) => {
 });
 
 // Special Matches
-app.get('/api/images/special-matches', (req, res) => {
+app.get('/api/images/special-matches', cacheMiddleware('/api/images/special-matches', 5 * 60 * 1000), (req, res) => {
   try {
     const matches = getSpecialMatches();
     res.json(matches);
@@ -1677,7 +1686,7 @@ app.delete('/api/images/special-matches/:id', (req, res) => {
 });
 
 // Daily Images
-app.get('/api/images/daily-images', (req, res) => {
+app.get('/api/images/daily-images', cacheMiddleware('/api/images/daily-images', 5 * 60 * 1000), (req, res) => {
   try {
     const images = getDailyImages();
     res.json(images);
@@ -1736,7 +1745,7 @@ app.delete('/api/images/daily-images/:id', (req, res) => {
 });
 
 // Upcoming Fights Background
-app.get('/api/images/upcoming-fights-background', (req, res) => {
+app.get('/api/images/upcoming-fights-background', cacheMiddleware('/api/images/upcoming-fights-background', 5 * 60 * 1000), (req, res) => {
   try {
     const background = getUpcomingFightsBackground();
     res.json(background);

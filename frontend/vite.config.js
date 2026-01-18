@@ -53,30 +53,75 @@ export default defineConfig({
   
   // Build optimizations
   build: {
-    // Code splitting
+    // Code splitting - more aggressive splitting for smaller bundles
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-libs': ['lucide-react'],
-          'utils': ['axios'],
+        manualChunks: (id) => {
+          // Vendor chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('react-router')) {
+              return 'vendor-router';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+            if (id.includes('axios')) {
+              return 'vendor-axios';
+            }
+            // Other node_modules
+            return 'vendor-other';
+          }
+          
+          // Component chunks
+          if (id.includes('/components/')) {
+            if (id.includes('skeletons')) {
+              return 'components-skeletons';
+            }
+            if (id.includes('Admin') || id.includes('Management')) {
+              return 'components-admin';
+            }
+            return 'components';
+          }
+          
+          // Utils and hooks
+          if (id.includes('/utils/') || id.includes('/hooks/')) {
+            return 'utils';
+          }
         },
+        // Optimize chunk file names
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
       },
     },
     // Chunk size warning limit
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500, // Lower limit to catch large bundles
     // Minification
     minify: 'terser',
     terserOptions: {
       compress: {
         drop_console: true, // Remove console.log in production
         drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug'], // Remove specific console methods
+        passes: 2, // Multiple passes for better optimization
+      },
+      mangle: {
+        safari10: true, // Fix Safari 10 issues
       },
     },
     // CSS code splitting
     cssCodeSplit: true,
     // Source maps for debugging (disable in production)
     sourcemap: false,
+    // Target modern browsers for smaller bundles
+    target: 'es2015',
+    // Tree shaking
+    treeshake: {
+      moduleSideEffects: false,
+    },
   },
   
   // Performance optimizations

@@ -13,10 +13,11 @@ import { useDatabase } from './hooks/useDatabase';
 // Utils
 import { initPerformanceMonitoring, preloadCriticalResources } from './utils/performanceMonitor';
 
-// Critical Components (loaded immediately)
+// Critical Components (loaded immediately - only essential for first paint)
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
-import NewsPopup from './components/NewsPopup';
+// NewsPopup is lazy-loaded since it's not critical for first paint
+const NewsPopup = lazy(() => import('./components/NewsPopup'));
 
 // Lazy-loaded Components (code splitting)
 const HighlightsSection = lazy(() => import('./components/HighlightsSection'));
@@ -688,8 +689,10 @@ const App = () => {
         <Footer language={language} stadiums={stadiums} t={t} />
       </Suspense>
       
-      {/* News Popup */}
-      <NewsPopup language={language} />
+      {/* News Popup - Lazy loaded */}
+      <Suspense fallback={null}>
+        <NewsPopup language={language} />
+      </Suspense>
     </div>
   );
 };
