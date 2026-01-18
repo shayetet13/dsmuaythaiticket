@@ -501,12 +501,15 @@ const App = () => {
         setMobileMenuOpen={setMobileMenuOpen}
       />
 
-      {/* Hero Section - Show skeleton when loading, content when loaded */}
-      {dbLoaded ? (
-        <HeroSection heroImage={heroImage || { image: '/images/highlights/World class fighters.webp', alt: 'Muay Thai', fallback: '/images/highlights/World class fighters.webp' }} t={t} />
-      ) : (
-        <HeroSectionSkeleton />
-      )}
+      {/* Hero Section - Show immediately with fallback image for better LCP */}
+      <HeroSection 
+        heroImage={heroImage || { 
+          image: '/images/highlights/World class fighters.webp', 
+          alt: 'Muay Thai', 
+          fallback: '/images/highlights/World class fighters.webp' 
+        }} 
+        t={t} 
+      />
 
       {/* Lazy-loaded sections with Suspense */}
       <Suspense fallback={<HighlightsSectionSkeleton />}>
