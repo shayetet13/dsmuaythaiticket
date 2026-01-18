@@ -7,7 +7,7 @@ import { formatDate, formatCurrency } from '../utils/formatHelpers';
 
 const SuccessPageStandalone = () => {
   const [bookingData, setBookingData] = useState(null);
-  const [language, setLanguage] = useState('th');
+  const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -16,7 +16,7 @@ const SuccessPageStandalone = () => {
     const loadData = async () => {
       // Get reference number from URL query parameter
       const ref = searchParams.get('ref');
-      const savedLanguage = sessionStorage.getItem('language') || 'th';
+      const savedLanguage = sessionStorage.getItem('language') || 'en';
       setLanguage(savedLanguage);
 
       if (ref) {

@@ -94,7 +94,7 @@ class EmailService {
 
     return `
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -338,7 +338,6 @@ class EmailService {
       border-radius: 4px;
       padding: 28px;
       position: relative;
-      transition: all 0.3s ease;
     }
     
     .section::before {
@@ -349,12 +348,6 @@ class EmailService {
       width: 4px;
       height: 100%;
       background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
-    }
-    
-    .section:hover {
-      background: rgba(220, 38, 38, 0.08);
-      border-color: rgba(220, 38, 38, 0.4);
-      transform: translateX(4px);
     }
     
     .section-title {
@@ -487,7 +480,6 @@ class EmailService {
       border-radius: 4px;
       padding: 24px 20px;
       text-align: center;
-      transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
     }
@@ -503,13 +495,6 @@ class EmailService {
         #dc2626 0%, 
         #991b1b 50%, 
         #dc2626 100%);
-    }
-    
-    .reference-item:hover {
-      background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
-      border-color: #dc2626;
-      transform: translateY(-4px);
-      box-shadow: 0 12px 24px rgba(220, 38, 38, 0.3);
     }
     
     .reference-label {
@@ -568,7 +553,6 @@ class EmailService {
       text-transform: uppercase;
       margin: 32px 0 8px;
       text-align: center;
-      transition: all 0.3s ease;
       box-shadow: 
         0 8px 20px rgba(220, 38, 38, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -577,34 +561,8 @@ class EmailService {
       overflow: hidden;
     }
     
-    .success-button::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      transition: width 0.6s ease, height 0.6s ease;
-    }
-    
-    .success-button:hover::before {
-      width: 400px;
-      height: 400px;
-    }
-    
-    .success-button:hover {
-      transform: translateY(-3px);
-      box-shadow: 
-        0 12px 28px rgba(220, 38, 38, 0.5),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3);
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    }
-    
     .success-button:active {
-      transform: translateY(0);
+      transform: translateY(2px);
     }
     
     .success-button span {
@@ -855,7 +813,7 @@ class EmailService {
 
     return `
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
