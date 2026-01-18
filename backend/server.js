@@ -583,6 +583,110 @@ app.post('/api/payments/send-confirmation', async (req, res) => {
   }
 });
 
+// Test email service endpoint (Admin only)
+app.post('/api/email/test', 
+  rateLimit(3, 60000), // Max 3 requests per minute
+  verifyApiKey, // Require valid API key
+  async (req, res) => {
+    try {
+      const { testType, customerEmail } = req.body;
+      
+      // Default test data
+      const testData = {
+        customerName: 'Test Customer',
+        customerEmail: customerEmail || process.env.TEST_CUSTOMER_EMAIL || 'test@example.com',
+        customerPhone: '0812345678',
+        stadiumName: 'Rajadamnern Stadium',
+        date: new Date().toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        ticketName: 'VIP Ringside',
+        zoneName: 'VIP',
+        quantity: 2,
+        totalPrice: 5000,
+        referenceNo: 'TEST-' + Date.now(),
+        orderNo: '000001'
+      };
+
+      const results = {
+        connection: false,
+        adminEmail: null,
+        customerEmail: null
+      };
+
+      // Step 1: Verify connection
+      console.log('[Email Test] Verifying email server connection...');
+      try {
+        results.connection = await emailService.verifyConnection();
+        if (!results.connection) {
+          return res.status(500).json({
+            success: false,
+            error: 'Email server connection failed',
+            results
+          });
+        }
+      } catch (error) {
+        return res.status(500).json({
+          success: false,
+          error: 'Email server connection failed',
+          message: error.message,
+          results
+        });
+      }
+
+      // Step 2: Test admin email (if testType is 'admin' or 'both')
+      if (!testType || testType === 'admin' || testType === 'both') {
+        try {
+          console.log('[Email Test] Sending admin notification...');
+          results.adminEmail = await emailService.sendBookingNotification(testData);
+        } catch (error) {
+          results.adminEmail = {
+            success: false,
+            error: error.message
+          };
+        }
+      }
+
+      // Step 3: Test customer email (if testType is 'customer' or 'both')
+      if (!testType || testType === 'customer' || testType === 'both') {
+        try {
+          console.log('[Email Test] Sending customer confirmation...');
+          results.customerEmail = await emailService.sendCustomerConfirmation(testData);
+        } catch (error) {
+          results.customerEmail = {
+            success: false,
+            error: error.message
+          };
+        }
+      }
+
+      // Return results
+      const allSuccess = results.connection && 
+        (!testType || testType === 'admin' || testType === 'both' ? results.adminEmail?.success !== false : true) &&
+        (!testType || testType === 'customer' || testType === 'both' ? results.customerEmail?.success !== false : true);
+
+      res.json({
+        success: allSuccess,
+        message: allSuccess 
+          ? 'Email test completed successfully' 
+          : 'Email test completed with some errors',
+        results
+      });
+
+    } catch (error) {
+      console.error('[Email Test] Error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Email test failed',
+        message: error.message
+      });
+    }
+  }
+);
+
 // ==================== Payment Gateway Webhook ====================
 
 // Webhook endpoint for Pay Solutions payment notifications
@@ -770,15 +874,37 @@ app.post('/webhook/simple', async (req, res) => {
 
           // Send email notifications
           // 1. Send to admin
-          await emailService.sendBookingNotification(emailData);
-          console.log('[Webhook] ✅ Admin email notification sent');
+          try {
+            await emailService.sendBookingNotification(emailData);
+            console.log('[Webhook] ✅ Admin email notification sent successfully');
+          } catch (adminEmailError) {
+            console.error('[Webhook] ❌ Failed to send admin email:', adminEmailError.message);
+            console.error('[Webhook] Admin email error details:', {
+              code: adminEmailError.code,
+              message: adminEmailError.message,
+              stack: adminEmailError.stack
+            });
+            // Continue to try sending customer email even if admin email fails
+          }
           
           // 2. Send to customer with success page link
-          await emailService.sendCustomerConfirmation(emailData);
-          console.log('[Webhook] ✅ Customer confirmation email sent to:', emailData.customerEmail);
+          try {
+            await emailService.sendCustomerConfirmation(emailData);
+            console.log('[Webhook] ✅ Customer confirmation email sent successfully to:', emailData.customerEmail);
+          } catch (customerEmailError) {
+            console.error('[Webhook] ❌ Failed to send customer email:', customerEmailError.message);
+            console.error('[Webhook] Customer email error details:', {
+              code: customerEmailError.code,
+              message: customerEmailError.message,
+              customerEmail: emailData.customerEmail,
+              stack: customerEmailError.stack
+            });
+            // Don't fail webhook if email fails, but log the error
+          }
 
         } catch (emailError) {
-          console.error('[Webhook] Error sending email notification:', emailError.message);
+          console.error('[Webhook] ❌ Unexpected error in email sending block:', emailError.message);
+          console.error('[Webhook] Error stack:', emailError.stack);
           // Don't fail webhook if email fails
         }
 

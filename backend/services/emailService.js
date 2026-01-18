@@ -17,8 +17,57 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
 
 class EmailService {
   constructor() {
+    // Validate email configuration before creating transporter
+    this.validateConfig();
+    
     // Create reusable transporter
     this.transporter = nodemailer.createTransport(EMAIL_CONFIG);
+    
+    // Log configuration (without password)
+    console.log('[EmailService] Initialized with config:', {
+      host: EMAIL_CONFIG.host,
+      port: EMAIL_CONFIG.port,
+      secure: EMAIL_CONFIG.secure,
+      user: EMAIL_CONFIG.auth.user,
+      adminEmail: ADMIN_EMAIL,
+      hasPassword: !!EMAIL_CONFIG.auth.pass
+    });
+  }
+
+  /**
+   * Validate email configuration
+   */
+  validateConfig() {
+    const errors = [];
+    
+    if (!EMAIL_CONFIG.host) {
+      errors.push('EMAIL_HOST is not set');
+    }
+    
+    if (!EMAIL_CONFIG.port) {
+      errors.push('EMAIL_PORT is not set');
+    }
+    
+    if (!EMAIL_CONFIG.auth.user) {
+      errors.push('EMAIL_USER is not set');
+    }
+    
+    if (!EMAIL_CONFIG.auth.pass) {
+      errors.push('EMAIL_PASSWORD is not set');
+    }
+    
+    if (!ADMIN_EMAIL) {
+      errors.push('ADMIN_EMAIL is not set');
+    }
+    
+    if (errors.length > 0) {
+      console.error('[EmailService] ❌ Email configuration errors:');
+      errors.forEach(error => console.error(`  - ${error}`));
+      console.error('[EmailService] Please check your .env file and set the required email variables');
+      throw new Error(`Email configuration incomplete: ${errors.join(', ')}`);
+    }
+    
+    console.log('[EmailService] ✅ Email configuration validated');
   }
 
   /**
@@ -690,8 +739,19 @@ class EmailService {
    */
   async sendBookingNotification(bookingData) {
     try {
-      console.log('[EmailService] Sending booking notification to admin...');
+      console.log('[EmailService] 📤 Sending booking notification to admin...');
       console.log('[EmailService] Recipient:', ADMIN_EMAIL);
+      console.log('[EmailService] SMTP Host:', EMAIL_CONFIG.host);
+      console.log('[EmailService] SMTP Port:', EMAIL_CONFIG.port);
+
+      // Verify connection before sending
+      try {
+        await this.transporter.verify();
+        console.log('[EmailService] ✅ SMTP connection verified');
+      } catch (verifyError) {
+        console.error('[EmailService] ❌ SMTP connection failed:', verifyError.message);
+        throw new Error(`SMTP connection failed: ${verifyError.message}`);
+      }
 
       const mailOptions = {
         from: `"DS Muay Thai Tickets" <${EMAIL_CONFIG.auth.user}>`,
@@ -700,10 +760,12 @@ class EmailService {
         html: this.generateBookingEmailHTML(bookingData)
       };
 
+      console.log('[EmailService] Sending email...');
       const info = await this.transporter.sendMail(mailOptions);
       
-      console.log('[EmailService] Email sent successfully!');
+      console.log('[EmailService] ✅ Email sent successfully!');
       console.log('[EmailService] Message ID:', info.messageId);
+      console.log('[EmailService] Response:', info.response);
       
       return {
         success: true,
@@ -711,7 +773,20 @@ class EmailService {
       };
 
     } catch (error) {
-      console.error('[EmailService] Error sending email:', error);
+      console.error('[EmailService] ❌ Error sending admin email:');
+      console.error('[EmailService] Error code:', error.code);
+      console.error('[EmailService] Error message:', error.message);
+      console.error('[EmailService] Full error:', error);
+      
+      // Provide helpful error messages
+      if (error.code === 'EAUTH') {
+        throw new Error(`Authentication failed. Check EMAIL_USER and EMAIL_PASSWORD in .env file. ${error.message}`);
+      } else if (error.code === 'ECONNECTION') {
+        throw new Error(`Connection failed. Check EMAIL_HOST and EMAIL_PORT in .env file. ${error.message}`);
+      } else if (error.code === 'ETIMEDOUT') {
+        throw new Error(`Connection timeout. Check network and firewall settings. ${error.message}`);
+      }
+      
       throw new Error(`Failed to send email: ${error.message}`);
     }
   }
@@ -721,7 +796,7 @@ class EmailService {
    */
   async sendCustomerConfirmation(bookingData) {
     try {
-      console.log('[EmailService] Sending confirmation email to customer...');
+      console.log('[EmailService] 📤 Sending confirmation email to customer...');
       console.log('[EmailService] Recipient:', bookingData.customerEmail);
       console.log('[EmailService] Customer data:', {
         customerName: bookingData.customerName,
@@ -731,8 +806,17 @@ class EmailService {
 
       // Validate customer email
       if (!bookingData.customerEmail || bookingData.customerEmail === 'N/A') {
-        console.error('[EmailService] Invalid customer email:', bookingData.customerEmail);
+        console.error('[EmailService] ❌ Invalid customer email:', bookingData.customerEmail);
         throw new Error('Invalid customer email address');
+      }
+
+      // Verify connection before sending
+      try {
+        await this.transporter.verify();
+        console.log('[EmailService] ✅ SMTP connection verified');
+      } catch (verifyError) {
+        console.error('[EmailService] ❌ SMTP connection failed:', verifyError.message);
+        throw new Error(`SMTP connection failed: ${verifyError.message}`);
       }
 
       const mailOptions = {
@@ -742,10 +826,12 @@ class EmailService {
         html: this.generateCustomerConfirmationHTML(bookingData)
       };
 
+      console.log('[EmailService] Sending email...');
       const info = await this.transporter.sendMail(mailOptions);
       
-      console.log('[EmailService] Customer email sent successfully!');
+      console.log('[EmailService] ✅ Customer email sent successfully!');
       console.log('[EmailService] Message ID:', info.messageId);
+      console.log('[EmailService] Response:', info.response);
       
       return {
         success: true,
@@ -753,7 +839,20 @@ class EmailService {
       };
 
     } catch (error) {
-      console.error('[EmailService] Error sending customer email:', error);
+      console.error('[EmailService] ❌ Error sending customer email:');
+      console.error('[EmailService] Error code:', error.code);
+      console.error('[EmailService] Error message:', error.message);
+      console.error('[EmailService] Full error:', error);
+      
+      // Provide helpful error messages
+      if (error.code === 'EAUTH') {
+        throw new Error(`Authentication failed. Check EMAIL_USER and EMAIL_PASSWORD in .env file. ${error.message}`);
+      } else if (error.code === 'ECONNECTION') {
+        throw new Error(`Connection failed. Check EMAIL_HOST and EMAIL_PORT in .env file. ${error.message}`);
+      } else if (error.code === 'ETIMEDOUT') {
+        throw new Error(`Connection timeout. Check network and firewall settings. ${error.message}`);
+      }
+      
       throw new Error(`Failed to send customer email: ${error.message}`);
     }
   }
