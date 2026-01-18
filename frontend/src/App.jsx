@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { CheckCircle } from 'lucide-react';
 import axios from 'axios';
 
@@ -187,77 +187,119 @@ const App = () => {
     return () => clearTimeout(timer);
   }, [heroImage]);
 
-  // Preload critical images (excluding hero image - it's preloaded in HeroSection)
+  // Preload critical images (defer to avoid blocking TBT)
   useEffect(() => {
     if (dbLoaded && highlights.length > 0) {
-      const criticalResources = [];
-      
-      // Only preload highlights (hero image is handled in HeroSection component)
-      highlights.slice(0, 2).forEach(highlight => {
-        if (highlight.image && !highlight.image.includes('/hero/')) {
-          criticalResources.push({ url: highlight.image, type: 'image' });
+      // Defer preloading to avoid blocking main thread
+      const preloadImages = () => {
+        const criticalResources = [];
+        
+        // Only preload highlights (hero image is handled in HeroSection component)
+        highlights.slice(0, 2).forEach(highlight => {
+          if (highlight.image && !highlight.image.includes('/hero/')) {
+            criticalResources.push({ url: highlight.image, type: 'image' });
+          }
+        });
+        
+        if (criticalResources.length > 0) {
+          preloadCriticalResources(criticalResources);
         }
-      });
+      };
       
-      if (criticalResources.length > 0) {
-        preloadCriticalResources(criticalResources);
+      // Use requestIdleCallback to defer non-critical preloading
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(preloadImages, { timeout: 3000 });
+      } else {
+        setTimeout(preloadImages, 1000);
       }
     }
   }, [dbLoaded, highlights]);
 
-  // Disable browser scroll restoration and scroll to top on page load
+  // Disable browser scroll restoration and scroll to top on page load (defer to avoid blocking TBT)
   useEffect(() => {
-    if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'manual';
+    // Defer scroll operations to avoid blocking main thread
+    const initScroll = () => {
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'manual';
+      }
+      
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      
+      const handleLoad = () => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      };
+      
+      window.addEventListener('load', handleLoad);
+      
+      const timer = setTimeout(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 100);
+      
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('load', handleLoad);
+      };
+    };
+    
+    // Use requestIdleCallback to defer scroll operations
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(initScroll, { timeout: 1000 });
+    } else {
+      setTimeout(initScroll, 50);
     }
-    
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-    
-    const handleLoad = () => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    };
-    
-    window.addEventListener('load', handleLoad);
-    
-    const timer = setTimeout(() => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    }, 100);
-    
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('load', handleLoad);
-    };
   }, []);
 
-  // Auto-rotate highlights
+  // Auto-rotate highlights (defer to avoid blocking TBT)
   useEffect(() => {
     if (highlights.length > 0) {
-      const interval = setInterval(() => {
-        setHighlightIndex((prevIndex) => (prevIndex + 1) % highlights.length);
-      }, 5000);
-
-      return () => clearInterval(interval);
+      // Defer interval setup to avoid blocking initial render
+      const setupInterval = () => {
+        const interval = setInterval(() => {
+          setHighlightIndex((prevIndex) => (prevIndex + 1) % highlights.length);
+        }, 5000);
+        return () => clearInterval(interval);
+      };
+      
+      // Use requestIdleCallback to defer interval setup
+      let cleanup;
+      if ('requestIdleCallback' in window) {
+        const idleId = requestIdleCallback(() => {
+          cleanup = setupInterval();
+        }, { timeout: 2000 });
+        return () => {
+          cancelIdleCallback(idleId);
+          if (cleanup) cleanup();
+        };
+      } else {
+        const timer = setTimeout(() => {
+          cleanup = setupInterval();
+        }, 1000);
+        return () => {
+          clearTimeout(timer);
+          if (cleanup) cleanup();
+        };
+      }
     }
   }, [highlights.length]);
 
-  // Functions
-  const toggleLanguage = () => {
+  // Functions (memoized to reduce re-renders and TBT)
+  const toggleLanguage = useCallback(() => {
     setLanguage(language === 'en' ? 'th' : 'en');
-  };
+  }, [language]);
 
-  const nextHighlight = () => {
+  const nextHighlight = useCallback(() => {
     setHighlightIndex((prevIndex) => (prevIndex + 1) % highlights.length);
-  };
+  }, [highlights.length]);
 
-  const prevHighlight = () => {
+  const prevHighlight = useCallback(() => {
     setHighlightIndex((prevIndex) => (prevIndex - 1 + highlights.length) % highlights.length);
-  };
+  }, [highlights.length]);
 
   const handleBooking = async (e) => {
     e.preventDefault();
@@ -468,13 +510,15 @@ const App = () => {
     }
   }, [selectedStadium]);
 
-  // Load all ticket configs for all stadiums (for UpcomingFightsSection)
+  // Load all ticket configs for all stadiums (defer to avoid blocking TBT)
   useEffect(() => {
     const loadAllTicketConfigs = async () => {
       if (!stadiums || stadiums.length === 0) return;
       
       const configs = {};
-      for (const stadium of stadiums) {
+      // Load configs sequentially with small delays to avoid blocking
+      for (let i = 0; i < stadiums.length; i++) {
+        const stadium = stadiums[i];
         try {
           const response = await axios.get(`${API_URL}/stadiums/${stadium.id}/tickets`);
           // Parse days from JSON string to array for regular tickets
@@ -485,17 +529,33 @@ const App = () => {
               days: typeof ticket.days === 'string' ? (ticket.days ? JSON.parse(ticket.days) : null) : ticket.days
             }))
           };
+          
+          // Update state incrementally to avoid blocking
+          setTicketConfigs(prev => ({ ...prev, [stadium.id]: configs[stadium.id] }));
+          
+          // Small delay between requests to avoid blocking main thread
+          if (i < stadiums.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
         } catch (err) {
           console.error(`Error loading ticket config for ${stadium.id}:`, err);
           configs[stadium.id] = { regularTickets: [], specialTickets: [] };
+          setTicketConfigs(prev => ({ ...prev, [stadium.id]: configs[stadium.id] }));
         }
       }
-      
-      setTicketConfigs(prev => ({ ...prev, ...configs }));
     };
 
     if (stadiums && stadiums.length > 0) {
-      loadAllTicketConfigs();
+      // Defer loading to avoid blocking initial render
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          loadAllTicketConfigs();
+        }, { timeout: 2000 });
+      } else {
+        setTimeout(() => {
+          loadAllTicketConfigs();
+        }, 500);
+      }
     }
   }, [stadiums]);
 

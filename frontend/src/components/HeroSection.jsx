@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import AnimatedSection from './AnimatedSection';
 
 const HeroSection = ({ heroImage, t }) => {
-  // Check if heroImage has valid image data
-  const hasValidImage = heroImage && heroImage.image && heroImage.image.trim() !== '';
-  const imageSrc = hasValidImage ? heroImage.image : (heroImage?.fallback || '/images/highlights/World class fighters.webp');
-  const imageAlt = heroImage?.alt || 'Muay Thai';
-  const fallbackSrc = heroImage?.fallback || '/images/highlights/World class fighters.webp';
+  // Memoize image source calculation to reduce re-renders
+  const imageData = useMemo(() => {
+    const hasValidImage = heroImage && heroImage.image && heroImage.image.trim() !== '';
+    const imageSrc = hasValidImage ? heroImage.image : (heroImage?.fallback || '/images/highlights/World class fighters.webp');
+    const imageAlt = heroImage?.alt || 'Muay Thai';
+    const fallbackSrc = heroImage?.fallback || '/images/highlights/World class fighters.webp';
+    return { imageSrc, imageAlt, fallbackSrc };
+  }, [heroImage]);
 
   // Note: Hero image preloading is handled via HTML <link rel="preload"> in index.html
   // This provides better performance than JavaScript preloading and improves LCP
@@ -16,17 +19,18 @@ const HeroSection = ({ heroImage, t }) => {
       <div className="absolute inset-0 z-0">
         {/* Use regular img tag for hero image (critical above-the-fold content) */}
         <img
-          src={imageSrc}
-          alt={imageAlt}
+          src={imageData.imageSrc}
+          alt={imageData.imageAlt}
           width={1920}
           height={1080}
           fetchpriority="high"
           loading="eager"
+          decoding="async"
           className="w-full h-full object-cover filter grayscale brightness-40"
           style={{ aspectRatio: '16/9' }}
           onError={(e) => {
-            if (e.target.src !== fallbackSrc) {
-              e.target.src = fallbackSrc;
+            if (e.target.src !== imageData.fallbackSrc) {
+              e.target.src = imageData.fallbackSrc;
             } else {
               console.error('[HeroSection] Fallback image also failed to load');
             }

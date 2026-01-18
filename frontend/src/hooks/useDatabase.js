@@ -27,19 +27,22 @@ export const useDatabase = (language) => {
   const [upcomingFightsBackground, setUpcomingFightsBackground] = useState(null);
   const [dbLoaded, setDbLoaded] = useState(false);
 
-  // Initialize database and load data (defer to avoid blocking FCP)
+  // Initialize database and load data (optimized for LCP and TBT)
   useEffect(() => {
-    // Use requestIdleCallback or setTimeout to defer non-critical API calls
-    // This allows the page to render first before making API calls
+    let cancelled = false;
+    
     const loadData = async () => {
       try {
         await initDb();
+        if (cancelled) return;
         
-        // Load hero image first (priority for LCP), then load other data in parallel
+        // Load hero image first (priority for LCP) - this is critical
         const heroData = await getHeroImage();
-        setHeroImage(heroData);
+        if (!cancelled) {
+          setHeroImage(heroData);
+        }
         
-        // Load all other data in parallel for faster loading
+        // Load all other data in parallel but with staggered state updates to reduce TBT
         const [
           highlightsData,
           stadiumsData,
@@ -58,26 +61,41 @@ export const useDatabase = (language) => {
           getUpcomingFightsBackground()
         ]);
         
-        // Set data from successful promises
-        if (highlightsData.status === 'fulfilled') setHighlights(highlightsData.value);
-        if (stadiumsData.status === 'fulfilled') setStadiums(stadiumsData.value);
-        if (weeklyFightsData.status === 'fulfilled') setWeeklyFights(weeklyFightsData.value);
-        if (schedulesData.status === 'fulfilled') setStadiumImageSchedules(schedulesData.value);
-        if (specialMatchesData.status === 'fulfilled') setSpecialMatches(specialMatchesData.value);
-        if (dailyImagesData.status === 'fulfilled') setDailyImages(dailyImagesData.value);
-        if (backgroundData.status === 'fulfilled') setUpcomingFightsBackground(backgroundData.value);
+        if (cancelled) return;
         
-        setDbLoaded(true);
+        // Update state in batches to reduce blocking time
+        // Use requestAnimationFrame to spread updates across frames
+        const updateState = (setter, value) => {
+          requestAnimationFrame(() => {
+            if (!cancelled) setter(value);
+          });
+        };
+        
+        if (highlightsData.status === 'fulfilled') updateState(setHighlights, highlightsData.value);
+        if (stadiumsData.status === 'fulfilled') updateState(setStadiums, stadiumsData.value);
+        if (weeklyFightsData.status === 'fulfilled') updateState(setWeeklyFights, weeklyFightsData.value);
+        if (schedulesData.status === 'fulfilled') updateState(setStadiumImageSchedules, schedulesData.value);
+        if (specialMatchesData.status === 'fulfilled') updateState(setSpecialMatches, specialMatchesData.value);
+        if (dailyImagesData.status === 'fulfilled') updateState(setDailyImages, dailyImagesData.value);
+        if (backgroundData.status === 'fulfilled') updateState(setUpcomingFightsBackground, backgroundData.value);
+        
+        // Set dbLoaded after a short delay to allow initial render
+        requestAnimationFrame(() => {
+          if (!cancelled) setDbLoaded(true);
+        });
       } catch (error) {
         console.error('Error loading database:', error);
-        // Fallback to default data if database fails
-        setDbLoaded(true);
+        if (!cancelled) setDbLoaded(true);
       }
     };
     
     // Start loading immediately but don't block render
     // The page will show with fallback image first, then update when API responds
     loadData();
+    
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Reload data when language changes
