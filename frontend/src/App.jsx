@@ -582,9 +582,9 @@ const App = () => {
       {/* Hero Section - Show immediately with actual hero image for better LCP */}
       <HeroSection 
         heroImage={heroImage || { 
-          image: '/images/hero/World class fighters.webp', 
+          image: '/images/hero/World%20class%20fighters.webp', 
           alt: 'Muay Thai', 
-          fallback: '/images/hero/World class fighters.webp' 
+          fallback: '/images/hero/World%20class%20fighters.webp' 
         }} 
         t={t} 
       />

@@ -6,9 +6,19 @@ const HeroSection = ({ heroImage, t }) => {
   const imageData = useMemo(() => {
     const hasValidImage = heroImage && heroImage.image && heroImage.image.trim() !== '';
     // Use actual hero image path instead of fallback
-    const imageSrc = hasValidImage ? heroImage.image : '/images/hero/World class fighters.webp';
+    // Encode path to match preload in index.html (browser will decode automatically)
+    const defaultPath = '/images/hero/World%20class%20fighters.webp';
+    // Encode the image path if it contains spaces (to match preload)
+    const encodePath = (path) => {
+      if (!path) return defaultPath;
+      // If path already contains encoded spaces, return as is
+      if (path.includes('%20')) return path;
+      // Otherwise, encode spaces to match preload
+      return path.replace(/ /g, '%20');
+    };
+    const imageSrc = hasValidImage ? encodePath(heroImage.image) : defaultPath;
     const imageAlt = heroImage?.alt || 'Muay Thai';
-    const fallbackSrc = '/images/hero/World class fighters.webp';
+    const fallbackSrc = defaultPath;
     return { imageSrc, imageAlt, fallbackSrc };
   }, [heroImage]);
 
