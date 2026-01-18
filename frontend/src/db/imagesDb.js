@@ -5,7 +5,7 @@ import { API_URL } from '../config/api.js';
 // Default data structure (fallback)
 const defaultData = {
   hero: {
-    image: '/images/hero/World class fighters.webp'',
+    image: '/images/hero/World class fighters.webp',
     fallback: '/images/highlights/World class fighters.webp',
     alt: 'Muay Thai'
   },
