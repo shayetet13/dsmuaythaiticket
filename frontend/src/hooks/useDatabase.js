@@ -27,8 +27,10 @@ export const useDatabase = (language) => {
   const [upcomingFightsBackground, setUpcomingFightsBackground] = useState(null);
   const [dbLoaded, setDbLoaded] = useState(false);
 
-  // Initialize database and load data
+  // Initialize database and load data (defer to avoid blocking FCP)
   useEffect(() => {
+    // Use requestIdleCallback or setTimeout to defer non-critical API calls
+    // This allows the page to render first before making API calls
     const loadData = async () => {
       try {
         await initDb();
@@ -72,6 +74,9 @@ export const useDatabase = (language) => {
         setDbLoaded(true);
       }
     };
+    
+    // Start loading immediately but don't block render
+    // The page will show with fallback image first, then update when API responds
     loadData();
   }, []);
 

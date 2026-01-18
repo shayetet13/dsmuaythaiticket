@@ -110,64 +110,81 @@ const App = () => {
     return 0;
   }, [selectedStadium, selectedZone, bookingForm.quantity, ticketConfigs, zones]);
 
-  // Initialize performance monitoring
+  // Initialize performance monitoring (defer to avoid blocking FCP)
   useEffect(() => {
-    // Initialize performance monitoring
-    const { isSlow } = initPerformanceMonitoring();
+    // Defer performance monitoring to avoid blocking first paint
+    // Run after initial render is complete using requestIdleCallback
+    const initMonitoring = () => {
+      const { isSlow } = initPerformanceMonitoring();
+      
+      // Adjust quality based on connection speed
+      if (isSlow) {
+        // Reduce image quality or disable some features for slow connections
+      }
+    };
     
-    // Adjust quality based on connection speed
-    if (isSlow) {
-      // Reduce image quality or disable some features for slow connections
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(initMonitoring, { timeout: 2000 });
+    } else {
+      // Fallback: defer by 500ms
+      setTimeout(initMonitoring, 500);
     }
   }, []);
 
-  // Update SEO meta tags dynamically when hero image is loaded
+  // Update SEO meta tags dynamically when hero image is loaded (defer to avoid blocking FCP)
   useEffect(() => {
-    const baseUrl = window.location.origin;
-    const currentUrl = window.location.href;
+    // Defer SEO updates to avoid blocking first paint
+    if (!heroImage) return;
     
-    // Update og:url
-    let ogUrl = document.querySelector('meta[property="og:url"]');
-    if (!ogUrl) {
-      ogUrl = document.createElement('meta');
-      ogUrl.setAttribute('property', 'og:url');
-      document.head.appendChild(ogUrl);
-    }
-    ogUrl.setAttribute('content', currentUrl);
+    const timer = setTimeout(() => {
+      const baseUrl = window.location.origin;
+      const currentUrl = window.location.href;
+      
+      // Update og:url
+      let ogUrl = document.querySelector('meta[property="og:url"]');
+      if (!ogUrl) {
+        ogUrl = document.createElement('meta');
+        ogUrl.setAttribute('property', 'og:url');
+        document.head.appendChild(ogUrl);
+      }
+      ogUrl.setAttribute('content', currentUrl);
+      
+      // Update image meta tags if hero image is available
+      if (heroImage && heroImage.image) {
+        // Always use hero-social.webp for social sharing (created from current hero image)
+        // This ensures consistent social media preview regardless of which hero image is used
+        let socialImage = '/images/hero/hero-social.webp';
+        
+        // Convert to absolute URL (required by Facebook and other social platforms)
+        const imageUrl = socialImage.startsWith('http') 
+          ? socialImage 
+          : `${baseUrl}${socialImage.startsWith('/') ? '' : '/'}${socialImage}`;
+        
+        // Update Open Graph image
+        const ogImage = document.querySelector('meta[property="og:image"]');
+        if (ogImage) {
+          ogImage.setAttribute('content', imageUrl);
+        } else {
+          const meta = document.createElement('meta');
+          meta.setAttribute('property', 'og:image');
+          meta.setAttribute('content', imageUrl);
+          document.head.appendChild(meta);
+        }
+        
+        // Update Twitter image
+        const twitterImage = document.querySelector('meta[name="twitter:image"]');
+        if (twitterImage) {
+          twitterImage.setAttribute('content', imageUrl);
+        } else {
+          const meta = document.createElement('meta');
+          meta.setAttribute('name', 'twitter:image');
+          meta.setAttribute('content', imageUrl);
+          document.head.appendChild(meta);
+        }
+      }
+    }, 100);
     
-    // Update image meta tags if hero image is available
-    if (heroImage && heroImage.image) {
-      // Always use hero-social.webp for social sharing (created from current hero image)
-      // This ensures consistent social media preview regardless of which hero image is used
-      let socialImage = '/images/hero/hero-social.webp';
-      
-      // Convert to absolute URL (required by Facebook and other social platforms)
-      const imageUrl = socialImage.startsWith('http') 
-        ? socialImage 
-        : `${baseUrl}${socialImage.startsWith('/') ? '' : '/'}${socialImage}`;
-      
-      // Update Open Graph image
-      const ogImage = document.querySelector('meta[property="og:image"]');
-      if (ogImage) {
-        ogImage.setAttribute('content', imageUrl);
-      } else {
-        const meta = document.createElement('meta');
-        meta.setAttribute('property', 'og:image');
-        meta.setAttribute('content', imageUrl);
-        document.head.appendChild(meta);
-      }
-      
-      // Update Twitter image
-      const twitterImage = document.querySelector('meta[name="twitter:image"]');
-      if (twitterImage) {
-        twitterImage.setAttribute('content', imageUrl);
-      } else {
-        const meta = document.createElement('meta');
-        meta.setAttribute('name', 'twitter:image');
-        meta.setAttribute('content', imageUrl);
-        document.head.appendChild(meta);
-      }
-    }
+    return () => clearTimeout(timer);
   }, [heroImage]);
 
   // Preload critical images (excluding hero image - it's preloaded in HeroSection)
@@ -483,7 +500,7 @@ const App = () => {
   }, [stadiums]);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gray-900 text-white font-loaded">
       {/* Success Message */}
       {bookingSuccess && (
         <div className="fixed top-20 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center">
