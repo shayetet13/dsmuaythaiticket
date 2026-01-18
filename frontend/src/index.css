@@ -1,0 +1,348 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Performance optimizations */
+html {
+  scroll-behavior: smooth;
+  /* Enable GPU acceleration for smoother scrolling */
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  margin: 0;
+  font-family: 'K2D', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent layout shifts */
+  overflow-x: hidden;
+}
+
+/* Optimize image rendering */
+img {
+  /* Force GPU acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Better image rendering */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Smooth transforms and animations */
+* {
+  /* Enable GPU acceleration for all transforms */
+  will-change: auto;
+}
+
+/* Only apply will-change to elements that actually animate */
+.animate-spin,
+.hover\:scale-105:hover,
+.hover\:scale-110:hover,
+[class*="transition-"] {
+  will-change: transform;
+}
+
+/* Optimize lazy loaded images */
+.lazy-load-image-background {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+}
+
+.lazy-load-image-background.blur {
+  filter: blur(10px);
+  transition: filter 0.3s ease-out;
+}
+
+.lazy-load-image-background.blur.lazy-load-image-loaded {
+  filter: blur(0);
+}
+
+/* Prevent layout shift during image load */
+.optimized-image-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.optimized-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Custom animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(234, 179, 8, 0.6);
+  }
+}
+
+@keyframes goldenGlow {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px rgba(250, 204, 21, 0.6),
+      0 0 40px rgba(250, 204, 21, 0.4),
+      0 0 60px rgba(250, 204, 21, 0.3),
+      0 0 80px rgba(250, 204, 21, 0.2),
+      inset 0 0 20px rgba(250, 204, 21, 0.1);
+    border-color: rgba(250, 204, 21, 0.9);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px rgba(250, 204, 21, 0.8),
+      0 0 60px rgba(250, 204, 21, 0.6),
+      0 0 90px rgba(250, 204, 21, 0.4),
+      0 0 120px rgba(250, 204, 21, 0.3),
+      inset 0 0 30px rgba(250, 204, 21, 0.15);
+    border-color: rgba(250, 204, 21, 1);
+  }
+}
+
+@keyframes goldenShimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.8s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.8s ease-out forwards;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animate-golden-glow {
+  animation: goldenGlow 2s ease-in-out infinite alternate;
+}
+
+.golden-card-glow {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 1),
+    rgba(255, 250, 240, 1),
+    rgba(255, 255, 255, 1)
+  );
+}
+
+.golden-card-glow::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  background: linear-gradient(
+    45deg,
+    rgba(250, 204, 21, 0.9),
+    rgba(255, 215, 0, 1),
+    rgba(250, 204, 21, 0.9),
+    rgba(255, 223, 0, 0.8),
+    rgba(250, 204, 21, 0.9)
+  );
+  background-size: 400% 400%;
+  border-radius: 12px;
+  z-index: -1;
+  opacity: 0.7;
+  animation: goldenShimmer 3s ease-in-out infinite;
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.golden-card-glow::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 215, 0, 0.4),
+    rgba(250, 204, 21, 0.3),
+    rgba(255, 223, 0, 0.4),
+    rgba(250, 204, 21, 0.3)
+  );
+  background-size: 200% 200%;
+  border-radius: 10px;
+  z-index: -1;
+  opacity: 0.9;
+  animation: goldenShimmer 4s ease-in-out infinite reverse;
+  pointer-events: none;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 3s infinite;
+}
+
+/* Custom scrollbar for stadium sections */
+.stadium-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.stadium-scroll-container::-webkit-scrollbar-track {
+  background: #1f2937;
+  border-radius: 4px;
+}
+
+.stadium-scroll-container::-webkit-scrollbar-thumb {
+  background: #eab308;
+  border-radius: 4px;
+}
+
+.stadium-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #ca8a04;
+}
+
+/* Mobile horizontal scroll for event cards */
+@media (max-width: 639px) {
+  .overflow-x-auto {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  
+  .overflow-x-auto {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+  }
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Swipe hint animation */
+@keyframes swipe-hint {
+  0%, 100% {
+    opacity: 0.4;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateX(4px);
+  }
+}
+
+.animate-swipe-hint {
+  animation: swipe-hint 2s ease-in-out infinite;
+}
+
+/* News Popup Animations */
+/* Toast Animations */
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
