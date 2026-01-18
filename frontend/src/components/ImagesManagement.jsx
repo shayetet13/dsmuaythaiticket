@@ -838,8 +838,9 @@ const ImagesManagement = () => {
                             const file = e.target.files[0];
                             if (file) {
                               try {
-                                // For stadium logos, use smaller max dimensions but higher quality
-                                const compressedBase64 = await compressImage(file, 800, 800, 0.9);
+                                // For stadium logos, use optimized dimensions (logos display at max 300px, so 500px is sufficient with 2x for retina)
+                                // Quality 0.85 matches backend processing for consistency
+                                const compressedBase64 = await compressImage(file, 500, 500, 0.85);
                                 setEditForm({
                                   ...editForm,
                                   logoBase64: compressedBase64,

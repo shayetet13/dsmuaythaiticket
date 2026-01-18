@@ -26,7 +26,7 @@ const defaultImages = {
   ],
   bangla: [
     '/images/highlights/aow4.jpg',
-    '/images/highlights/_RMS0100.jpg',
+    '/images/highlights/World class fighters.jpg',
     '/images/highlights/_NPX0152-2.jpg',
     '/images/highlights/20230930-NPX_3584.jpg'
   ],
