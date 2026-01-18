@@ -16,7 +16,7 @@ const defaultImages = {
     '/images/highlights/RWS (125 of 220).jpg',
     '/images/highlights/RWS (131 of 220).jpg',
     '/images/highlights/_DSC5122.jpg',
-    '/images/highlights/World class fighters.jpg'
+    '/images/hero/World class fighters.webp'
   ],
   lumpinee: [
     '/images/highlights/OTA_COVER.jpg',
@@ -26,7 +26,7 @@ const defaultImages = {
   ],
   bangla: [
     '/images/highlights/aow4.jpg',
-    '/images/highlights/World class fighters.jpg',
+    '/images/hero/World class fighters.webp',
     '/images/highlights/_NPX0152-2.jpg',
     '/images/highlights/20230930-NPX_3584.jpg'
   ],
@@ -34,7 +34,7 @@ const defaultImages = {
     '/images/highlights/P7012865 (1).jpg',
     '/images/highlights/S__89981064.jpg',
     '/images/highlights/NPX_5549.JPG',
-    '/images/highlights/World class fighters.jpg'
+    '/images/hero/World class fighters.webp'
   ]
 };
 

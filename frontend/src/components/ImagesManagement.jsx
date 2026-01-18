@@ -78,7 +78,7 @@ const ImagesManagement = () => {
       const result = await updateHeroImage(
         editForm.image, 
         editForm.alt || 'Muay Thai',
-        editForm.fallback || '/images/highlights/World class fighters.webp'
+        editForm.fallback || '/images/hero/World class fighters.webp'
       );
       if (result) {
         showMessage('success', 'อัพเดท Hero Image สำเร็จ');
@@ -218,7 +218,7 @@ const ImagesManagement = () => {
                   value={editForm.image || data.hero.image}
                   onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
                   className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white"
-                  placeholder="/images/hero/hero-bg.webp"
+                  placeholder="/images/hero/World class fighters.webp"
                 />
                 <p className="text-xs text-gray-400 mt-1">หรืออัพโหลดไฟล์ภาพด้านล่าง</p>
               </div>
@@ -276,10 +276,10 @@ const ImagesManagement = () => {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Fallback Image Path (ถ้าภาพหลักโหลดไม่ได้)</label>
                 <input
                   type="text"
-                  value={editForm.fallback || data.hero.fallback || '/images/highlights/World class fighters.webp'}
+                  value={editForm.fallback || data.hero.fallback || '/images/hero/World class fighters.webp'}
                   onChange={(e) => setEditForm({ ...editForm, fallback: e.target.value })}
                   className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white"
-                  placeholder="/images/highlights/World class fighters.webp"
+                  placeholder="/images/hero/World class fighters.webp"
                 />
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
@@ -308,7 +308,7 @@ const ImagesManagement = () => {
                   alt={data.hero.alt}
                   className="max-w-full h-64 object-cover rounded-lg mb-4"
                   onError={(e) => {
-                    e.target.src = data.hero.fallback || '/images/highlights/World class fighters.webp';
+                    e.target.src = data.hero.fallback || '/images/hero/World class fighters.webp';
                   }}
                 />
                 <p className="text-gray-300"><strong>Path:</strong> {data.hero.image?.substring(0, 100)}{data.hero.image?.length > 100 ? '...' : ''}</p>
@@ -384,10 +384,10 @@ const ImagesManagement = () => {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Fallback Image Path (ถ้าภาพหลักโหลดไม่ได้)</label>
                 <input
                   type="text"
-                  value={editForm.fallback || (data.upcomingFightsBackground?.fallback || '/images/highlights/World class fighters.webp')}
+                  value={editForm.fallback || (data.upcomingFightsBackground?.fallback || '/images/hero/World class fighters.webp')}
                   onChange={(e) => setEditForm({ ...editForm, fallback: e.target.value })}
                   className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white"
-                  placeholder="/images/highlights/World class fighters.webp"
+                  placeholder="/images/hero/World class fighters.webp"
                 />
               </div>
               <div className="flex gap-2">
@@ -416,18 +416,18 @@ const ImagesManagement = () => {
                   alt="Upcoming Fights Background"
                   className="max-w-full h-64 object-cover rounded-lg mb-4"
                   onError={(e) => {
-                    e.target.src = data.upcomingFightsBackground?.fallback || '/images/highlights/World class fighters.webp';
+                    e.target.src = data.upcomingFightsBackground?.fallback || '/images/hero/World class fighters.webp';
                   }}
                 />
                 <p className="text-gray-300"><strong>Path:</strong> {data.upcomingFightsBackground?.image || '/images/upcoming-fights-bg.webp'}</p>
-                <p className="text-gray-300"><strong>Fallback:</strong> {data.upcomingFightsBackground?.fallback || '/images/highlights/World class fighters.webp'}</p>
+                <p className="text-gray-300"><strong>Fallback:</strong> {data.upcomingFightsBackground?.fallback || '/images/hero/World class fighters.webp'}</p>
               </div>
               <button
                 onClick={() => {
                   setEditingId('upcoming');
                   setEditForm({ 
                     image: data.upcomingFightsBackground?.image || '/images/upcoming-fights-bg.webp',
-                    fallback: data.upcomingFightsBackground?.fallback || '/images/highlights/World class fighters.webp'
+                    fallback: data.upcomingFightsBackground?.fallback || '/images/hero/World class fighters.webp'
                   });
                 }}
                 className="bg-yellow-500 text-black px-4 py-2 rounded-lg flex items-center gap-2 font-semibold"

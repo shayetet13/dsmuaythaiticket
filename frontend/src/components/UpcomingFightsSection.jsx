@@ -23,7 +23,7 @@ const UpcomingFightsSection = ({
 }) => {
   // Use default background only if not loaded yet
   const backgroundImage = upcomingFightsBackground?.image || null;
-  const backgroundFallback = upcomingFightsBackground?.fallback || '/images/highlights/World class fighters.webp';
+  const backgroundFallback = upcomingFightsBackground?.fallback || '/images/hero/World class fighters.webp';
   // Get events for each stadium
   // Default images for each stadium
   const defaultImages = {
@@ -31,7 +31,7 @@ const UpcomingFightsSection = ({
       '/images/highlights/RWS (125 of 220).webp',
       '/images/highlights/RWS (131 of 220).webp',
       '/images/highlights/_DSC5122.webp',
-      '/images/highlights/World class fighters.webp'
+      '/images/hero/World class fighters.webp'
     ],
     lumpinee: [
       '/images/highlights/OTA_COVER.webp',
@@ -41,7 +41,7 @@ const UpcomingFightsSection = ({
     ],
     bangla: [
       '/images/highlights/aow4.webp',
-      '/images/highlights/World class fighters.webp',
+      '/images/hero/World class fighters.webp',
       '/images/highlights/_NPX0152-2.webp',
       '/images/highlights/20230930-NPX_3584.webp'
     ],
@@ -49,7 +49,7 @@ const UpcomingFightsSection = ({
       '/images/highlights/P7012865 (1).webp',
       '/images/highlights/S__89981064.webp',
       '/images/highlights/NPX_5549.webp',
-      '/images/highlights/World class fighters.webp'
+      '/images/hero/World class fighters.webp'
     ]
   };
 

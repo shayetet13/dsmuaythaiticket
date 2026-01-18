@@ -5,9 +5,10 @@ const HeroSection = ({ heroImage, t }) => {
   // Memoize image source calculation to reduce re-renders
   const imageData = useMemo(() => {
     const hasValidImage = heroImage && heroImage.image && heroImage.image.trim() !== '';
-    const imageSrc = hasValidImage ? heroImage.image : (heroImage?.fallback || '/images/highlights/World class fighters.webp');
+    // Use actual hero image path instead of fallback
+    const imageSrc = hasValidImage ? heroImage.image : '/images/hero/World class fighters.webp';
     const imageAlt = heroImage?.alt || 'Muay Thai';
-    const fallbackSrc = heroImage?.fallback || '/images/highlights/World class fighters.webp';
+    const fallbackSrc = '/images/hero/World class fighters.webp';
     return { imageSrc, imageAlt, fallbackSrc };
   }, [heroImage]);
 

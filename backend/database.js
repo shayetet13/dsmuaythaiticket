@@ -309,17 +309,17 @@ export const initDatabase = async () => {
   insertStadium.run('bangla', 'Bangla Boxing Stadium', 'Phuket');
   insertStadium.run('patong', 'Patong Stadium', 'Phuket');
 
-  // Insert default hero image if not exists (use fallback image as default)
+  // Insert default hero image if not exists (use actual hero image path)
   const insertHero = db.prepare(`
     INSERT OR IGNORE INTO hero_images (id, image, alt, fallback)
-    VALUES (1, '/images/highlights/World class fighters.webp', 'Muay Thai', '/images/highlights/World class fighters.webp')
+    VALUES (1, '/images/hero/World class fighters.webp', 'Muay Thai', '/images/hero/World class fighters.webp')
   `);
   insertHero.run();
 
   // Insert default upcoming fights background if not exists
   const insertBackground = db.prepare(`
     INSERT OR IGNORE INTO upcoming_fights_background (id, image, fallback)
-    VALUES (1, '/images/upcoming-fights-bg.webp', '/images/highlights/World class fighters.webp')
+    VALUES (1, '/images/upcoming-fights-bg.webp', '/images/hero/World class fighters.webp')
   `);
   insertBackground.run();
 
@@ -342,7 +342,7 @@ export const initDatabase = async () => {
 export const getHeroImage = () => {
   const stmt = db.prepare('SELECT * FROM hero_images WHERE id = 1');
   const hero = stmt.get();
-  return hero || { id: 1, image: '/images/highlights/World class fighters.webp', alt: 'Muay Thai', fallback: '/images/highlights/World class fighters.webp' };
+  return hero || { id: 1, image: '/images/hero/World class fighters.webp', alt: 'Muay Thai', fallback: '/images/hero/World class fighters.webp' };
 };
 
 export const updateHeroImage = (image, alt, fallback) => {
@@ -355,7 +355,7 @@ export const updateHeroImage = (image, alt, fallback) => {
       fallback = excluded.fallback,
       updated_at = CURRENT_TIMESTAMP
   `);
-  stmt.run(image, alt || 'Muay Thai', fallback || '/images/highlights/World class fighters.webp');
+  stmt.run(image, alt || 'Muay Thai', fallback || '/images/hero/World class fighters.webp');
   return getHeroImage();
 };
 
@@ -757,7 +757,7 @@ export const getUpcomingFightsBackground = () => {
   return bg || { 
     id: 1, 
     image: '/images/upcoming-fights-bg.webp', 
-    fallback: '/images/highlights/World class fighters.webp' 
+    fallback: '/images/hero/World class fighters.webp' 
   };
 };
 
@@ -770,7 +770,7 @@ export const updateUpcomingFightsBackground = (image, fallback) => {
       fallback = excluded.fallback,
       updated_at = CURRENT_TIMESTAMP
   `);
-  stmt.run(image, fallback || '/images/highlights/World class fighters.webp');
+  stmt.run(image, fallback || '/images/hero/World class fighters.webp');
   return getUpcomingFightsBackground();
 };
 

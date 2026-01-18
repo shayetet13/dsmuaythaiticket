@@ -17,7 +17,7 @@ const OptimizedImage = ({
   className = '',
   width,
   height,
-  fallback = '/images/highlights/World class fighters.jpg',
+  fallback = '/images/hero/World class fighters.webp',
   effect = 'blur',
   threshold = 100,
   useWebP = false, // Disable WebP by default to avoid issues

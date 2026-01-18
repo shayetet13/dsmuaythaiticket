@@ -6,7 +6,7 @@ import { API_URL } from '../config/api.js';
 const defaultData = {
   hero: {
     image: '/images/hero/World class fighters.webp',
-    fallback: '/images/highlights/World class fighters.webp',
+    fallback: '/images/hero/World class fighters.webp',
     alt: 'Muay Thai'
   },
   highlights: [],
@@ -57,7 +57,7 @@ const defaultData = {
   specialMatches: [],
   upcomingFightsBackground: {
     image: '/images/upcoming-fights-bg.webp',
-    fallback: '/images/highlights/World class fighters.webp'
+    fallback: '/images/hero/World class fighters.webp'
   }
 };
 
@@ -94,7 +94,7 @@ export const updateHeroImage = async (image, alt = 'Muay Thai', fallback = null)
     const response = await axios.put(`${API_URL}/images/hero`, {
       image,
       alt,
-      fallback: fallback || defaultData.hero.fallback
+      fallback: fallback || '/images/hero/World class fighters.webp'
     });
     return response.data;
   } catch (error) {
