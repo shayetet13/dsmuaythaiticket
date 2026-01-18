@@ -88,6 +88,10 @@ class EmailService {
       orderNo
     } = bookingData;
 
+    // Generate success page URL for admin to view customer's booking
+    const frontendUrl = process.env.FRONTEND_URL || 'https://dsmuaythaiticket.com';
+    const successPageUrl = `${frontendUrl}/success?ref=${referenceNo}`;
+
     return `
 <!DOCTYPE html>
 <html lang="th">
@@ -251,6 +255,24 @@ class EmailService {
       flex-shrink: 0;
     }
     
+    .success-button {
+      display: inline-block;
+      background: #3b82f6;
+      color: white;
+      padding: 16px 32px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 16px;
+      margin: 24px 0;
+      text-align: center;
+      transition: background 0.3s;
+    }
+    
+    .success-button:hover {
+      background: #2563eb;
+    }
+    
     .footer {
       background: #f8fafc;
       padding: 24px;
@@ -294,6 +316,13 @@ class EmailService {
       .reference-section {
         flex-direction: column;
         gap: 12px;
+      }
+      
+      .success-button {
+        padding: 14px 24px;
+        font-size: 14px;
+        width: 100%;
+        display: block;
       }
     }
   </style>
@@ -370,6 +399,11 @@ class EmailService {
       <div class="alert">
         <div class="alert-icon">⚠️</div>
         <div>Please verify the payment and prepare the ticket for the customer.</div>
+      </div>
+
+      <!-- Success Page Link -->
+      <div style="text-align: center;">
+        <a href="${successPageUrl}" class="success-button">View Customer Booking Details</a>
       </div>
     </div>
 
