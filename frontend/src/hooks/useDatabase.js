@@ -32,39 +32,23 @@ export const useDatabase = (language) => {
     const loadData = async () => {
       try {
         await initDb();
-        
-        // Load hero image first (priority for LCP), then load other data in parallel
         const heroData = await getHeroImage();
+        const highlightsData = await getHighlights(language);
+        const stadiumsData = await getStadiums(language);
+        const weeklyFightsData = await getWeeklyFights();
+        const schedulesData = await getStadiumImageSchedules();
+        const specialMatchesData = await getSpecialMatches();
+        const dailyImagesData = await getDailyImages();
+        const backgroundData = await getUpcomingFightsBackground();
+        
         setHeroImage(heroData);
-        
-        // Load all other data in parallel for faster loading
-        const [
-          highlightsData,
-          stadiumsData,
-          weeklyFightsData,
-          schedulesData,
-          specialMatchesData,
-          dailyImagesData,
-          backgroundData
-        ] = await Promise.allSettled([
-          getHighlights(language),
-          getStadiums(language),
-          getWeeklyFights(),
-          getStadiumImageSchedules(),
-          getSpecialMatches(),
-          getDailyImages(),
-          getUpcomingFightsBackground()
-        ]);
-        
-        // Set data from successful promises
-        if (highlightsData.status === 'fulfilled') setHighlights(highlightsData.value);
-        if (stadiumsData.status === 'fulfilled') setStadiums(stadiumsData.value);
-        if (weeklyFightsData.status === 'fulfilled') setWeeklyFights(weeklyFightsData.value);
-        if (schedulesData.status === 'fulfilled') setStadiumImageSchedules(schedulesData.value);
-        if (specialMatchesData.status === 'fulfilled') setSpecialMatches(specialMatchesData.value);
-        if (dailyImagesData.status === 'fulfilled') setDailyImages(dailyImagesData.value);
-        if (backgroundData.status === 'fulfilled') setUpcomingFightsBackground(backgroundData.value);
-        
+        setHighlights(highlightsData);
+        setStadiums(stadiumsData);
+        setWeeklyFights(weeklyFightsData);
+        setStadiumImageSchedules(schedulesData);
+        setSpecialMatches(specialMatchesData);
+        setDailyImages(dailyImagesData);
+        setUpcomingFightsBackground(backgroundData);
         setDbLoaded(true);
       } catch (error) {
         console.error('Error loading database:', error);
