@@ -33,9 +33,22 @@
   <meta name="twitter:image" content="https://dsmuaythaiticket.com/images/hero/hero-social.webp" />
   <meta name="twitter:image:alt" content="Muay Thai Fight" />
 
+  <!-- Resource Hints for Performance -->
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=K2D:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Preconnect to API backend (will be resolved at runtime) -->
+  <link rel="dns-prefetch" href="//localhost:5000">
+  
+  <!-- Preload Critical Resources -->
+  <!-- Preload hero image fallback (critical above-the-fold content) -->
+  <link rel="preload" href="/images/highlights/World class fighters.webp" as="image" fetchpriority="high">
+  <!-- Preload Google Fonts CSS (async load) -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=K2D:wght@400;500;600;700&display=swap" as="style">
+  <link href="https://fonts.googleapis.com/css2?family=K2D:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=K2D:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17867652868"></script>

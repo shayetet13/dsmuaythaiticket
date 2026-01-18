@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import AnimatedSection from './AnimatedSection';
-import OptimizedImage, { preloadImage } from './OptimizedImage';
 
 const HeroSection = ({ heroImage, t }) => {
   // Check if heroImage has valid image data
@@ -9,15 +8,8 @@ const HeroSection = ({ heroImage, t }) => {
   const imageAlt = heroImage?.alt || 'Muay Thai';
   const fallbackSrc = heroImage?.fallback || '/images/highlights/World class fighters.webp';
 
-
-  // Preload hero image (critical above-the-fold content)
-  useEffect(() => {
-    if (imageSrc) {
-      preloadImage(imageSrc).catch(() => {
-        // Silently fail - fallback image will be used
-      });
-    }
-  }, [imageSrc]);
+  // Note: Hero image preloading is now handled via HTML <link rel="preload"> in index.html
+  // This provides better performance than JavaScript preloading
 
   return (
     <section id="home" className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
@@ -26,7 +18,12 @@ const HeroSection = ({ heroImage, t }) => {
         <img
           src={imageSrc}
           alt={imageAlt}
+          width={1920}
+          height={1080}
+          fetchpriority="high"
+          loading="eager"
           className="w-full h-full object-cover filter grayscale brightness-40"
+          style={{ aspectRatio: '16/9' }}
           onError={(e) => {
             if (e.target.src !== fallbackSrc) {
               e.target.src = fallbackSrc;
