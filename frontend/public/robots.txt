@@ -1,0 +1,18 @@
+# robots.txt for DS Muay Thai Ticket
+# https://dsmuaythaiticket.com
+
+User-agent: *
+Allow: /
+
+# Disallow admin pages
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /booking?*
+
+# Allow important pages
+Allow: /
+Allow: /booking
+Allow: /success
+
+# Sitemap location
+Sitemap: https://dsmuaythaiticket.com/sitemap.xml
