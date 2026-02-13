@@ -1,0 +1,26 @@
+{
+  "name": "mticket",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Muay Thai Ticket Booking System",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "build": "cd frontend && npm run build"
+  },
+  "dependencies": {
+    "axios": "^1.13.2"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "muay-thai",
+    "tickets",
+    "booking"
+  ],
+  "author": "",
+  "license": "ISC"
+}
