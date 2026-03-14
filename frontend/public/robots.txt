@@ -1,0 +1,26 @@
+# robots.txt for DS Muay Thai Ticket
+# https://dsmuaythaiticket.com
+
+User-agent: *
+Allow: /
+
+# Disallow admin pages
+Disallow: /admin
+Disallow: /admin/*
+
+# Allow important pages (including /booking?lang=th for multilingual SEO)
+Allow: /
+Allow: /booking
+Allow: /success
+
+# Allow AI crawlers (for ChatGPT citations, Perplexity, etc.)
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-Web
+User-agent: PerplexityBot
+User-agent: Google-Extended
+Allow: /
+
+# Sitemap location
+Sitemap: https://dsmuaythaiticket.com/sitemap.xml
