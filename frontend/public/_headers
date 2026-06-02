@@ -1,0 +1,12 @@
+# Cache headers for performance (Lighthouse: Use efficient cache lifetimes)
+# HTML - revalidate to get fresh content
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Hashed assets (JS, CSS) - immutable, cache 1 year
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Static images
+/images/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

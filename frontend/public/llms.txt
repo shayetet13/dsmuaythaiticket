@@ -1,0 +1,26 @@
+# DS Muay Thai Ticket
+> Official Muay Thai ticket seller for Bangkok and Phuket. Book Lumpinee, Rajadamnern, Bangla, and Patong Stadium tickets online with instant confirmation.
+
+## Core Pages
+- [Home](https://dsmuaythaiticket.com/): Muay Thai tickets Bangkok & Phuket
+- [Book Tickets](https://dsmuaythaiticket.com/booking): Online booking for Lumpinee, Rajadamnern, Bangla, Patong Stadiums
+
+## Stadiums We Sell
+- **Lumpinee Stadium** (Bangkok): Thailand's most prestigious Muay Thai stadium
+- **Rajadamnern Stadium** (Bangkok): Historic stadium, championship fights
+- **Bangla Stadium** (Phuket): Patong Beach area
+- **Patong Stadium** (Phuket): Phuket Muay Thai
+
+## Services
+- Online ticket booking with instant confirmation
+- QR Code e-tickets via email
+- Secure payment (QR Code, credit card)
+- Support: support@dsmuaythaiticket.com
+
+## FAQ
+- Can I buy Lumpinee Muay Thai tickets online? Yes, you can book official Lumpinee tickets online with instant confirmation.
+- Which seats are best at Lumpinee Stadium? Ringside seats offer the closest action, VIP seats provide the best overall view.
+- Is Lumpinee Stadium suitable for tourists? Yes, modern stadium, tourist-friendly, popular with international visitors.
+- How to get to stadium? Taxi or Grab from hotel or city.
+- Can I go with kids? Yes, children permitted with ticket.
+- Can I cancel my ticket? No, once placed the seat is reserved and cannot be changed.
